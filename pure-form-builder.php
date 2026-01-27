@@ -1,8 +1,10 @@
 <?php
 /*
 Plugin Name: Pure Custom Form Builder
-Version: 1.0.0
 Author: Md Shakibur Rahman
+Author URI: https://github.com/mdshakiburrahman6/
+Description: A simple drag-and-drop form builder plugin for WordPress to create custom forms with ease.
+Version: 2.0.0
 */
 
 if (!defined('ABSPATH')) exit;
@@ -74,4 +76,5 @@ add_action('admin_enqueue_scripts', function ($hook) {
         '1.0',
         true
     );
+    wp_enqueue_script('jquery-ui-sortable');
 });
