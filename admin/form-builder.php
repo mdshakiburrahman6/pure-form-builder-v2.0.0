@@ -188,7 +188,19 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT name, label, type, optio
                     </td>
                 </tr>
             </table>
-            <?php submit_button($edit_field ? 'Update Field' : 'Add Field'); ?>
+            <?php // submit_button($edit_field ? 'Update Field' : 'Add Field'); ?>
+            <div class="pfb-form-actions" style="margin-top: 20px; display: flex; gap: 10px; align-items: center;">
+                <?php 
+                // Submit/Update Button
+                submit_button($edit_field ? 'Update Field' : 'Add Field', 'primary', 'submit', false); 
+                ?>
+
+                <?php if ($edit_field): ?>
+                    <a href="?page=pfb-builder&form_id=<?php echo $form_id; ?>" class="button button-secondary">
+                        Cancel Edit
+                    </a>
+                <?php endif; ?>
+            </div>
         </form>
     <?php endif; ?>
 
