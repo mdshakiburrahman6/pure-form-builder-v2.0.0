@@ -1,4 +1,9 @@
 <?php
+/**
+ * includes/activator.php
+ * Final Optimized Version: Strict SQL Syntax with Full 3-Tab Support
+ */
+
 if (!defined('ABSPATH')) exit;
 
 function pfb_activate() {
@@ -6,35 +11,87 @@ function pfb_activate() {
     $charset = $wpdb->get_charset_collate();
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-    // 1. Forms table: Updated with Design and Access Control Columns
+    // 1. Forms table: Updated with prefixed columns for View, Edit, and Submit tabs
     $table_forms = $wpdb->prefix . 'pfb_forms';
     $sql_forms = "CREATE TABLE $table_forms (
         id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-        name varchar(200),
+        name varchar(200) NOT NULL,
         access_type varchar(50) DEFAULT 'all',
         allowed_roles text NULL,
-        redirect_type varchar(50) DEFAULT 'message',
-        redirect_page int(11) DEFAULT 0,
         allow_user_edit tinyint(1) DEFAULT 0,
-        primary_color varchar(20) DEFAULT '#2271b1',
-        button_text_color varchar(20) DEFAULT '#ffffff',
-        form_padding int(11) DEFAULT 25,
-        border_radius int(11) DEFAULT 8,
-        field_spacing int(11) DEFAULT 20,
-        legend_font_size int(11) DEFAULT 20,
-        label_color varchar(20) DEFAULT '#333333',
-        input_bg_color varchar(20) DEFAULT '#ffffff',
         form_bg_image text NULL,
-        column_layout varchar(20) DEFAULT '1-col',
-        button_text varchar(100) DEFAULT 'Submit',
-        text_align varchar(20) DEFAULT 'left',
-        button_width varchar(20) DEFAULT 'auto',
+        view_column_layout varchar(20) DEFAULT '1-col',
+        view_form_padding int(11) DEFAULT 25,
+        view_header_gap int(11) DEFAULT 15,
+        view_field_spacing int(11) DEFAULT 20,
+        view_input_bg_color varchar(20) DEFAULT '#ffffff',
+        view_heading_font_size int(11) DEFAULT 22,
+        view_heading_font_weight int(11) DEFAULT 600,
+        view_heading_color varchar(20) DEFAULT '#2271b1',
+        view_label_font_size int(11) DEFAULT 14,
+        view_label_font_weight int(11) DEFAULT 600,
+        view_label_color varchar(20) DEFAULT '#333333',
+        view_text_font_size int(11) DEFAULT 14,
+        view_text_font_weight int(11) DEFAULT 400,
+        view_text_color varchar(20) DEFAULT '#000000',
+        view_submit_btn_text varchar(100) DEFAULT 'Edit Profile',
+        view_submit_btn_bg varchar(20) DEFAULT '#2271b1',
+        view_submit_btn_clr varchar(20) DEFAULT '#ffffff',
+        view_submit_btn_radius int(11) DEFAULT 6,
+        view_cancel_btn_text varchar(100) DEFAULT 'Back',
+        view_cancel_btn_bg varchar(20) DEFAULT '#eeeeee',
+        view_cancel_btn_clr varchar(20) DEFAULT '#333333',
+        view_cancel_btn_radius int(11) DEFAULT 6,
+        edit_column_layout varchar(20) DEFAULT '1-col',
+        edit_form_padding int(11) DEFAULT 25,
+        edit_header_gap int(11) DEFAULT 15,
+        edit_field_spacing int(11) DEFAULT 20,
+        edit_input_bg_color varchar(20) DEFAULT '#ffffff',
+        edit_heading_font_size int(11) DEFAULT 22,
+        edit_heading_font_weight int(11) DEFAULT 600,
+        edit_heading_color varchar(20) DEFAULT '#2271b1',
+        edit_label_font_size int(11) DEFAULT 14,
+        edit_label_font_weight int(11) DEFAULT 600,
+        edit_label_color varchar(20) DEFAULT '#333333',
+        edit_text_font_size int(11) DEFAULT 14,
+        edit_text_font_weight int(11) DEFAULT 400,
+        edit_text_color varchar(20) DEFAULT '#000000',
+        edit_submit_btn_text varchar(100) DEFAULT 'Update',
+        edit_submit_btn_bg varchar(20) DEFAULT '#2271b1',
+        edit_submit_btn_clr varchar(20) DEFAULT '#ffffff',
+        edit_submit_btn_radius int(11) DEFAULT 6,
+        edit_cancel_btn_text varchar(100) DEFAULT 'Cancel',
+        edit_cancel_btn_bg varchar(20) DEFAULT '#eeeeee',
+        edit_cancel_btn_clr varchar(20) DEFAULT '#333333',
+        edit_cancel_btn_radius int(11) DEFAULT 6,
+        submit_column_layout varchar(20) DEFAULT '1-col',
+        submit_form_padding int(11) DEFAULT 25,
+        submit_header_gap int(11) DEFAULT 15,
+        submit_field_spacing int(11) DEFAULT 20,
+        submit_input_bg_color varchar(20) DEFAULT '#ffffff',
+        submit_heading_font_size int(11) DEFAULT 22,
+        submit_heading_font_weight int(11) DEFAULT 600,
+        submit_heading_color varchar(20) DEFAULT '#2271b1',
+        submit_label_font_size int(11) DEFAULT 14,
+        submit_label_font_weight int(11) DEFAULT 600,
+        submit_label_color varchar(20) DEFAULT '#333333',
+        submit_text_font_size int(11) DEFAULT 14,
+        submit_text_font_weight int(11) DEFAULT 400,
+        submit_text_color varchar(20) DEFAULT '#000000',
+        submit_submit_btn_text varchar(100) DEFAULT 'Submit',
+        submit_submit_btn_bg varchar(20) DEFAULT '#2271b1',
+        submit_submit_btn_clr varchar(20) DEFAULT '#ffffff',
+        submit_submit_btn_radius int(11) DEFAULT 6,
+        submit_cancel_btn_text varchar(100) DEFAULT 'Cancel',
+        submit_cancel_btn_bg varchar(20) DEFAULT '#eeeeee',
+        submit_cancel_btn_clr varchar(20) DEFAULT '#333333',
+        submit_cancel_btn_radius int(11) DEFAULT 6,
         created_at datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY  (id)
     ) $charset;";
     dbDelta($sql_forms);
 
-    // 2. Fields table: Updated for V2 Nested Sections and Conditional Logic
+    // 2. Fields table, 3. Entries table, 4. Entry meta table remains same as your code
     $table_fields = $wpdb->prefix . 'pfb_fields';
     $sql_fields = "CREATE TABLE $table_fields (
         id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -52,12 +109,13 @@ function pfb_activate() {
         max_size float DEFAULT 0,
         min_size float DEFAULT 0,
         sort_order int(11) DEFAULT 0,
+        section_bg_image text NULL,
+        section_bg_opacity float DEFAULT 1.0,
         created_at datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY  (id)
     ) $charset;";
     dbDelta($sql_fields);
 
-    // 3. Entries table
     $table_entries = $wpdb->prefix . 'pfb_entries';
     $sql_entries = "CREATE TABLE $table_entries (
         id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -69,7 +127,6 @@ function pfb_activate() {
     ) $charset;";
     dbDelta($sql_entries);
 
-    // 4. Entry meta table
     $table_meta = $wpdb->prefix . 'pfb_entry_meta';
     $sql_meta = "CREATE TABLE $table_meta (
         id bigint(20) unsigned NOT NULL AUTO_INCREMENT,

@@ -1,53 +1,133 @@
 <?php
-/**
- * admin/form-settings.php
- * Absolute Full Version: Advanced UI Designer + Access Control
- * Includes: Column Layout, Typography, Background Image, and Button Customization.
- */
-
 if (!defined('ABSPATH')) exit;
-
 global $wpdb;
 
 $form_id = isset($_GET['form_id']) ? intval($_GET['form_id']) : 0;
 $form = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pfb_forms WHERE id = %d", $form_id));
-
-if (!$form) {
-    echo '<div class="notice notice-error"><p>Invalid form.</p></div>';
-    return;
-}
+if (!$form) { echo '<div class="notice notice-error"><p>Invalid form.</p></div>'; return; }
 
 $allowed_roles = !empty($form->allowed_roles) ? array_map('trim', explode(',', $form->allowed_roles)) : [];
 $roles = wp_roles()->roles;
-$pages = get_pages();
+
+/**
+ * ইউজার ফ্রেন্ডলি ডিজাইনার ফাংশন (Vertical Layout)
+ */
+function pfb_render_full_designer($prefix, $form) {
+    ?>
+    <tr style="background:#f0f0f1;"><th colspan="2"><h3>Layout Style</h3></th></tr>
+    <tr>
+        <th>Column Layout</th>
+        <td>
+            <select name="<?php echo $prefix; ?>column_layout" style="width:200px;">
+                <option value="1-col" <?php selected($form->{$prefix.'column_layout'} ?? '1-col', '1-col'); ?>>Single Column</option>
+                <option value="2-col" <?php selected($form->{$prefix.'column_layout'} ?? '1-col', '2-col'); ?>>Double Column</option>
+                <option value="3-col" <?php selected($form->{$prefix.'column_layout'} ?? '1-col', '3-col'); ?>>Triple Column</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <th>Padding & Gaps</th>
+        <td class="pfb-design-container">
+            <div class="pfb-input-row">
+                <label><strong>Form Padding</strong></label>
+                <input type="number" name="<?php echo $prefix; ?>form_padding" value="<?php echo esc_attr($form->{$prefix.'form_padding'} ?? 25); ?>"> <span>px</span>
+            </div>
+            <div class="pfb-input-row">
+                <label><strong>Header Gap</strong> (Between Header & Fields)</label>
+                <input type="number" name="<?php echo $prefix; ?>header_gap" value="<?php echo esc_attr($form->{$prefix.'header_gap'} ?? 15); ?>"> <span>px</span>
+            </div>
+            <div class="pfb-input-row">
+                <label><strong>Fields Gap</strong> (Between Inputs)</label>
+                <input type="number" name="<?php echo $prefix; ?>field_spacing" value="<?php echo esc_attr($form->{$prefix.'field_spacing'} ?? 20); ?>"> <span>px</span>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <th>Background Color</th>
+        <td><input type="color" name="<?php echo $prefix; ?>input_bg_color" value="<?php echo esc_attr($form->{$prefix.'input_bg_color'} ?? '#ffffff'); ?>"></td>
+    </tr>
+
+    <tr style="background:#f0f0f1;"><th colspan="2"><h3>Typography Settings</h3></th></tr>
+    <?php 
+    $typo_items = ['heading' => 'Heading Style', 'label' => 'Label Style', 'text' => 'Input Text Style'];
+    foreach ($typo_items as $key => $title): ?>
+    <tr>
+        <th><?php echo $title; ?></th>
+        <td class="pfb-design-container">
+            <div class="pfb-input-row">
+                <label><strong>Font Size</strong></label>
+                <input type="number" name="<?php echo $prefix.$key; ?>_font_size" value="<?php echo esc_attr($form->{$prefix.$key.'_font_size'} ?? 16); ?>"> <span>px</span>
+            </div>
+            <div class="pfb-input-row">
+                <label><strong>Font Weight</strong></label>
+                <select name="<?php echo $prefix.$key; ?>_font_weight">
+                    <?php foreach([100,200,300,400,500,600,700,800] as $w) echo '<option value="'.$w.'" '.selected(($form->{$prefix.$key.'_font_weight'} ?? 400), $w, false).'>'.$w.'</option>'; ?>
+                </select>
+            </div>
+            <div class="pfb-input-row">
+                <label><strong>Text Color</strong></label>
+                <input type="color" name="<?php echo $prefix.$key; ?>_color" value="<?php echo esc_attr($form->{$prefix.$key.'_color'} ?? '#333333'); ?>">
+            </div>
+        </td>
+    </tr>
+    <?php endforeach; ?>
+
+    <tr style="background:#f0f0f1;"><th colspan="2"><h3>Buttons Designer</h3></th></tr>
+    <?php foreach(['submit' => 'Submit Button', 'cancel' => 'Cancel Button'] as $b_key => $b_label): ?>
+    <tr>
+        <th><?php echo $b_label; ?></th>
+        <td class="pfb-design-container">
+            <div class="pfb-input-row">
+                <label><strong>Button Text</strong></label>
+                <input type="text" name="<?php echo $prefix.$b_key; ?>_btn_text" value="<?php echo esc_attr($form->{$prefix.$b_key.'_btn_text'} ?? ($b_key === 'submit' ? 'Submit' : 'Cancel')); ?>" class="regular-text">
+            </div>
+            <div class="pfb-input-row">
+                <label><strong>Background Color</strong></label>
+                <input type="color" name="<?php echo $prefix.$b_key; ?>_btn_bg" value="<?php echo esc_attr($form->{$prefix.$b_key.'_btn_bg'} ?? ($b_key === 'submit' ? '#2271b1' : '#eeeeee')); ?>">
+            </div>
+            <div class="pfb-input-row">
+                <label><strong>Text Color</strong></label>
+                <input type="color" name="<?php echo $prefix.$b_key; ?>_btn_clr" value="<?php echo esc_attr($form->{$prefix.$b_key.'_btn_clr'} ?? ($b_key === 'submit' ? '#ffffff' : '#333333')); ?>">
+            </div>
+            <div class="pfb-input-row">
+                <label><strong>Border Radius</strong></label>
+                <input type="number" name="<?php echo $prefix.$b_key; ?>_btn_radius" value="<?php echo esc_attr($form->{$prefix.$b_key.'_btn_radius'} ?? 6); ?>"> <span>px</span>
+            </div>
+        </td>
+    </tr>
+    <?php endforeach; ?>
+    <?php
+}
 ?>
 
 <div class="wrap">
-    <h1>Form Settings — <?php echo esc_html($form->name); ?></h1>
+    <h1>Advanced Designer Settings — <?php echo esc_html($form->name); ?></h1>
 
-    <?php if (isset($_GET['updated'])): ?>
-        <div class="notice notice-success is-dismissible"><p>All settings updated successfully!</p></div>
+    <?php if (isset($_GET['updated']) && $_GET['updated'] == 1): ?>
+        <div class="notice notice-success is-dismissible"><p><strong>Success!</strong> All settings have been updated.</p></div>
     <?php endif; ?>
 
     <h2 class="nav-tab-wrapper" style="margin-bottom: 20px;">
-        <a href="#pfb-access-tab" class="nav-tab nav-tab-active" id="tab-access">Access Control</a>
-        <a href="#pfb-design-tab" class="nav-tab" id="tab-design">Advanced UI Designer</a>
+        <a href="#pfb-access-tab" class="nav-tab">Access Control</a>
+        <a href="#pfb-view-tab" class="nav-tab">1. View Profile</a>
+        <a href="#pfb-edit-tab" class="nav-tab">2. Edit Profile</a>
+        <a href="#pfb-submit-tab" class="nav-tab">3. Submit Form</a>
     </h2>
 
     <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
         <?php wp_nonce_field('pfb_save_form_settings', 'pfb_settings_nonce'); ?>
         <input type="hidden" name="action" value="pfb_save_form_settings">
         <input type="hidden" name="form_id" value="<?php echo $form_id; ?>">
+        <input type="hidden" name="last_tab" id="pfb_last_tab" value="#pfb-access-tab">
 
-        <div id="pfb-access-tab" class="pfb-tab-content">
+        <div id="pfb-access-tab" class="pfb-tab-content" style="display:none;">
             <table class="form-table">
                 <tr>
-                    <th>Who can access this form?</th>
+                    <th>Access Type</th>
                     <td>
                         <select name="access_type" id="pfb-access-type">
                             <option value="all" <?php selected($form->access_type, 'all'); ?>>Everyone</option>
                             <option value="logged_in" <?php selected($form->access_type, 'logged_in'); ?>>Only logged-in users</option>
-                            <option value="guest" <?php selected($form->access_type, 'guest'); ?>>Only guests</option>
                         </select>
                     </td>
                 </tr>
@@ -55,193 +135,93 @@ $pages = get_pages();
                     <th>Allowed Roles</th>
                     <td>
                         <?php foreach ($roles as $key => $role): ?>
-                            <label style="display:block;margin-bottom:6px;">
-                                <input type="checkbox" name="allowed_roles[]" value="<?php echo esc_attr($key); ?>" <?php checked(in_array($key, $allowed_roles)); ?>>
-                                <?php echo esc_html($role['name']); ?>
-                            </label>
+                            <label style="display:block;"><input type="checkbox" name="allowed_roles[]" value="<?php echo esc_attr($key); ?>" <?php checked(in_array($key, $allowed_roles)); ?>> <?php echo esc_html($role['name']); ?></label>
                         <?php endforeach; ?>
-                        <p class="description">Visible only if "Logged-in users" is selected.</p>
-                    </td>
-                </tr>
-                <tr>
-                    <th>Entry Management</th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="allow_user_edit" value="1" <?php checked($form->allow_user_edit); ?>>
-                            Allow users to edit their own entries
-                        </label>
                     </td>
                 </tr>
             </table>
         </div>
 
-        <div id="pfb-design-tab" class="pfb-tab-content" style="display:none;">
+        <div id="pfb-view-tab" class="pfb-tab-content" style="display:none;">
             <table class="form-table">
-                <tr style="background:#f6f7f7;"><th colspan="2"><h3>Layout & Spacing</h3></th></tr>
                 <tr>
-                    <th>Column Layout</th>
+                    <th>Profile Background</th>
                     <td>
-                        <select name="column_layout">
-                            <option value="1-col" <?php selected($form->column_layout ?? '1-col', '1-col'); ?>>Single Column</option>
-                            <option value="2-col" <?php selected($form->column_layout ?? '1-col', '2-col'); ?>>Double Column</option>
-                        </select>
+                        <input type="text" name="form_bg_image" id="pfb_bg_url" value="<?php echo esc_attr($form->form_bg_image); ?>" class="regular-text">
+                        <button type="button" class="button pfb-media-upload">Upload Image</button>
                     </td>
                 </tr>
-                <tr>
-                    <th>Form Padding</th>
-                    <td><input type="number" name="form_padding" value="<?php echo esc_attr($form->form_padding ?? 25); ?>" class="small-text"> px</td>
-                </tr>
-                <tr>
-                    <th>Field Spacing</th>
-                    <td><input type="number" name="field_spacing" value="<?php echo esc_attr($form->field_spacing ?? 20); ?>" class="small-text"> px</td>
-                </tr>
-
-                <tr style="background:#f6f7f7;"><th colspan="2"><h3>Colors & Background</h3></th></tr>
-                <tr>
-                    <th>Primary Theme Color</th>
-                    <td>
-                        <input type="color" name="primary_color" value="<?php echo esc_attr($form->primary_color ?? '#2271b1'); ?>">
-                        <p class="description">Applies to buttons and section legends.</p>
-                    </td>
-                </tr>
-                <tr>
-                    <th>Label Text Color</th>
-                    <td><input type="color" name="label_color" value="<?php echo esc_attr($form->label_color ?? '#333333'); ?>"></td>
-                </tr>
-                <tr>
-                    <th>Input BG Color</th>
-                    <td><input type="color" name="input_bg_color" value="<?php echo esc_attr($form->input_bg_color ?? '#ffffff'); ?>"></td>
-                </tr>
-                <tr>
-                    <th>Background Image</th>
-                    <td>
-                        <div class="pfb-media-upload-wrapper">
-                            <input type="text" name="form_bg_image" id="pfb_bg_image_url" value="<?php echo esc_attr($form->form_bg_image ?? ''); ?>" class="regular-text">
-                            <button type="button" id="pfb_upload_bg_btn" class="button button-secondary">Select Image</button>
-                            <button type="button" id="pfb_remove_bg_btn" class="button button-link-delete" style="<?php echo empty($form->form_bg_image) ? 'display:none;' : ''; ?>">Remove</button>
-                        </div>
-                        <div id="pfb_bg_preview" style="margin-top:10px;">
-                            <?php if (!empty($form->form_bg_image)): ?>
-                                <img src="<?php echo esc_url($form->form_bg_image); ?>" style="max-width:150px; border:1px solid #ccc; padding:5px; border-radius:4px;">
-                            <?php endif; ?>
-                        </div>
-                        <p class="description">Select an image from Media Library or paste a URL.</p>
-                    </td>
-                </tr>
-
-                <tr style="background:#f6f7f7;"><th colspan="2"><h3>Typography & Form Elements</h3></th></tr>
-                <tr>
-                    <th>Legend Font Size</th>
-                    <td><input type="number" name="legend_font_size" value="<?php echo esc_attr($form->legend_font_size ?? 20); ?>" class="small-text"> px</td>
-                </tr>
-                <tr>
-                    <th>Form Border Radius</th>
-                    <td><input type="number" name="border_radius" value="<?php echo esc_attr($form->border_radius ?? 8); ?>" class="small-text"> px</td>
-                </tr>
-                <tr>
-                    <th>Overall Text Align</th>
-                    <td>
-                        <select name="text_align">
-                            <option value="left" <?php selected($form->text_align ?? 'left', 'left'); ?>>Left</option>
-                            <option value="center" <?php selected($form->text_align ?? 'left', 'center'); ?>>Center</option>
-                            <option value="right" <?php selected($form->text_align ?? 'left', 'right'); ?>>Right</option>
-                        </select>
-                    </td>
-                </tr>
-
-                <tr style="background:#f6f7f7;"><th colspan="2"><h3>Button Customization</h3></th></tr>
-                <tr>
-                    <th>Button Label</th>
-                    <td><input type="text" name="button_text" value="<?php echo esc_attr($form->button_text ?? 'Submit'); ?>" class="regular-text"></td>
-                </tr>
-                <tr>
-                    <th>Button Text Color</th>
-                    <td><input type="color" name="button_text_color" value="<?php echo esc_attr($form->button_text_color ?? '#ffffff'); ?>"></td>
-                </tr>
-                <tr>
-                    <th>Button Width</th>
-                    <td>
-                        <select name="button_width">
-                            <option value="auto" <?php selected($form->button_width ?? 'auto', 'auto'); ?>>Auto (Fits Text)</option>
-                            <option value="100%" <?php selected($form->button_width ?? 'auto', '100%'); ?>>Full Width</option>
-                        </select>
-                    </td>
-                </tr>
+                <?php pfb_render_full_designer('view_', $form); ?>
             </table>
         </div>
 
-        <?php submit_button('Save All Form Settings'); ?>
+        <div id="pfb-edit-tab" class="pfb-tab-content" style="display:none;">
+            <table class="form-table"><?php pfb_render_full_designer('edit_', $form); ?></table>
+        </div>
+
+        <div id="pfb-submit-tab" class="pfb-tab-content" style="display:none;">
+            <table class="form-table"><?php pfb_render_full_designer('submit_', $form); ?></table>
+        </div>
+
+        <?php submit_button('Save All Designer Settings'); ?>
     </form>
 </div>
+
+<style>
+    .pfb-design-container { display: flex; flex-direction: column; gap: 12px; padding: 10px 0 !important; }
+    .pfb-input-row { display: flex; align-items: center; gap: 10px; }
+    .pfb-input-row label { width: 220px; display: inline-block; color: #555; }
+    .pfb-input-row input[type="number"] { width: 70px; }
+    .pfb-tab-content h3 { border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 10px; color: #2271b1; }
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const tabs = document.querySelectorAll('.nav-tab');
     const contents = document.querySelectorAll('.pfb-tab-content');
+    const lastTabInput = document.getElementById('pfb_last_tab');
+    const accessSelect = document.getElementById('pfb-access-type');
+    const roleRow = document.getElementById('pfb-role-row');
 
-    // Tab Switching Logic
+    // 1. Tab Switching & Persistence
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeTabId = urlParams.get('tab') || '#pfb-access-tab';
+
+    function activateTab(targetId) {
+        tabs.forEach(t => t.classList.remove('nav-tab-active'));
+        contents.forEach(c => c.style.display = 'none');
+
+        const activeLink = document.querySelector(`[href="${targetId}"]`);
+        if (activeLink) activeLink.classList.add('nav-tab-active');
+
+        const activeDiv = document.getElementById(targetId.substring(1));
+        if (activeDiv) activeDiv.style.display = 'block';
+        
+        lastTabInput.value = targetId;
+    }
+
+    activateTab(activeTabId);
+
     tabs.forEach(tab => {
         tab.addEventListener('click', function(e) {
             e.preventDefault();
-            tabs.forEach(t => t.classList.remove('nav-tab-active'));
-            contents.forEach(c => c.style.display = 'none');
-
-            this.classList.add('nav-tab-active');
-            const targetId = this.getAttribute('href').substring(1);
-            document.getElementById(targetId).style.display = 'block';
+            activateTab(this.getAttribute('href'));
         });
     });
 
-    // Access Control Role Row Visibility
-    const accessSelect = document.getElementById('pfb-access-type');
-    const roleRow = document.getElementById('pfb-role-row');
-    const toggleRoles = () => roleRow.style.display = (accessSelect.value === 'logged_in') ? 'table-row' : 'none';
-    
-    accessSelect.addEventListener('change', toggleRoles);
-    toggleRoles(); // Initialize on load
-});
+    // 2. Access Control Role Toggling (Old Logic)
+    const toggleRoles = () => { if(roleRow) roleRow.style.display = (accessSelect.value === 'logged_in') ? 'table-row' : 'none'; };
+    if(accessSelect) accessSelect.addEventListener('change', toggleRoles);
+    toggleRoles();
 
-
-// WordPress Media Uploader Logic
-jQuery(document).ready(function($){
-    let mediaUploader;
-
-    $('#pfb_upload_bg_btn').click(function(e) {
+    // 3. Media Uploader Logic (Old Logic)
+    jQuery('.pfb-media-upload').click(function(e) {
         e.preventDefault();
-        
-        // If the uploader object has already been created, reopen the dialog
-        if (mediaUploader) {
-            mediaUploader.open();
-            return;
-        }
-        
-        // Extend the wp.media object
-        mediaUploader = wp.media.frames.file_frame = wp.media({
-            title: 'Select Form Background Image',
-            button: {
-                text: 'Use this Image'
-            },
-            multiple: false
-        });
-
-        // When a file is selected, grab the URL and set it as the text field's value
-        mediaUploader.on('select', function() {
-            let attachment = mediaUploader.state().get('selection').first().toJSON();
-            $('#pfb_bg_image_url').val(attachment.url);
-            $('#pfb_bg_preview').html('<img src="'+attachment.url+'" style="max-width:150px; border:1px solid #ccc; padding:5px; border-radius:4px;">');
-            $('#pfb_remove_bg_btn').show();
-        });
-
-        // Open the uploader dialog
-        mediaUploader.open();
-    });
-
-    // Remove background image logic
-    $('#pfb_remove_bg_btn').click(function() {
-        $('#pfb_bg_image_url').val('');
-        $('#pfb_bg_preview').empty();
-        $(this).hide();
+        let frame = wp.media({ title: 'Select Background', button: { text: 'Use Image' }, multiple: false });
+        frame.on('select', function() {
+            let attachment = frame.state().get('selection').first().toJSON();
+            jQuery('#pfb_bg_url').val(attachment.url);
+        }).open();
     });
 });
-
 </script>

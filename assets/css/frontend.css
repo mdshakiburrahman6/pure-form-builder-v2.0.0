@@ -205,3 +205,24 @@
     padding-top: 20px;
     border-top: 1px solid #eee;
 }
+
+
+/**
+ * Layout Grid System
+ * Synchronized with dynamic settings from renderer.php
+ */
+.pfb-section-wrapper {
+    display: grid;
+    grid-template-columns: 1fr; /* Default single column for mobile devices */
+    width: 100%;
+}
+
+/**
+ * Responsive Desktop Layout
+ * Grid columns are dynamically overridden via inline styles in renderer.php
+ */
+@media (min-width: 768px) {
+    .pfb-section-wrapper {
+        /* Desktop specific layout rules */
+    }
+}

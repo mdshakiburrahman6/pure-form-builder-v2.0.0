@@ -187,7 +187,17 @@ $all_fields = $wpdb->get_results($wpdb->prepare(
                         </select>
                     </td>
                 </tr>
-
+                <tr class="pfb-fieldset-only">
+                    <th>Section Background</th>
+                    <td>
+                        <input type="text" name="section_bg_image" id="pfb_section_bg_url" value="<?php echo esc_attr($edit_field->section_bg_image ?? ''); ?>" class="regular-text">
+                        <button type="button" class="button pfb-section-bg-upload">Select Image</button>
+                        <div style="margin-top:10px;">
+                            Opacity: <input type="number" name="section_bg_opacity" step="0.1" min="0" max="1" value="<?php echo esc_attr($edit_field->section_bg_opacity ?? 1.0); ?>" class="small-text">
+                            <p class="description">0.0 (Invisible) to 1.0 (Full Color)</p>
+                        </div>
+                    </td>
+                </tr>
                 <tr><th>Label</th><td><input type="text" name="field_label" class="regular-text" value="<?php echo esc_attr($edit_field->label ?? ''); ?>" required></td></tr>
                 <tr><th>System Name (ID)</th><td><input type="text" name="field_name" class="regular-text" value="<?php echo esc_attr($edit_field->name ?? ''); ?>" required <?php echo $edit_field ? 'readonly' : ''; ?>></td></tr>
 
@@ -418,6 +428,19 @@ $all_fields = $wpdb->get_results($wpdb->prepare(
         $(document).on('click', '.remove-rule', function() { $(this).closest('.rule-row').remove(); });
         $(document).on('click', '.remove-group', function() { $(this).closest('.rule-group').remove(); });
     });
+    </script>
+    <script>
+        // Section Background Media Uploader logic
+        jQuery(document).ready(function($){
+            $('.pfb-section-bg-upload').click(function(e) {
+                e.preventDefault();
+                let frame = wp.media({ title: 'Select Section Background', button: { text: 'Use Image' }, multiple: false });
+                frame.on('select', function() {
+                    let attachment = frame.state().get('selection').first().toJSON();
+                    $('#pfb_section_bg_url').val(attachment.url);
+                }).open();
+            });
+        });
     </script>
     <style>
         .ui-state-highlight { height: 50px; background: #f0faff; border: 1px dashed #2271b1; margin-bottom: 20px; }

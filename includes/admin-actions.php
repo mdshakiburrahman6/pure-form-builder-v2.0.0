@@ -98,6 +98,8 @@ function pfb_handle_add_field() {
         'fieldset_display' => sanitize_text_field($_POST['fieldset_display'] ?? 'show_always'),
         'file_types'       => sanitize_text_field($_POST['file_types'] ?? ''),
         'max_size'         => floatval($_POST['max_size'] ?? 0),
+        'section_bg_image'   => esc_url_raw($_POST['section_bg_image'] ?? ''),
+        'section_bg_opacity' => floatval($_POST['section_bg_opacity'] ?? 1.0),
     ];
 
     if ($field_id) {
@@ -261,20 +263,45 @@ function pfb_export_entries_csv() {
     exit;
 }
 
+// Save Form Settings
 function pfb_save_form_settings() {
     if (!current_user_can('manage_options')) wp_die('Permission denied');
     check_admin_referer('pfb_save_form_settings', 'pfb_settings_nonce');
+
     global $wpdb;
     $form_id = intval($_POST['form_id']);
-    $allowed_roles = isset($_POST['allowed_roles']) ? implode(',', array_map('sanitize_text_field', $_POST['allowed_roles'])) : null;
-    $wpdb->update("{$wpdb->prefix}pfb_forms", [
-        'access_type' => sanitize_text_field($_POST['access_type'] ?? 'all'),
-        'allowed_roles' => $allowed_roles,
+    
+    $data = [
+        'access_type'     => sanitize_text_field($_POST['access_type'] ?? 'all'),
         'allow_user_edit' => isset($_POST['allow_user_edit']) ? 1 : 0,
-        'primary_color' => sanitize_hex_color($_POST['primary_color']),
-        'button_text_color' => sanitize_hex_color($_POST['button_text_color']),
-        'form_bg_image' => esc_url_raw($_POST['form_bg_image']),
-    ], ['id' => $form_id]);
-    wp_redirect(admin_url("admin.php?page=pfb-form-settings&form_id={$form_id}&updated=1"));
+        'form_bg_image'   => esc_url_raw($_POST['form_bg_image'] ?? ''),
+    ];
+
+    $tabs = ['view_', 'edit_', 'submit_']; /* */
+
+    foreach ($tabs as $pre) {
+        $data[$pre . 'column_layout']        = sanitize_text_field($_POST[$pre . 'column_layout'] ?? '1-col');
+        $data[$pre . 'form_padding']         = intval($_POST[$pre . 'form_padding'] ?? 25);
+        $data[$pre . 'header_gap']           = intval($_POST[$pre . 'header_gap'] ?? 15);
+        $data[$pre . 'field_spacing']        = intval($_POST[$pre . 'field_spacing'] ?? 20);
+        $data[$pre . 'input_bg_color']       = sanitize_hex_color($_POST[$pre . 'input_bg_color'] ?? '#ffffff');
+        
+        foreach (['heading', 'label', 'text'] as $type) {
+            $data[$pre . $type . '_font_size']   = intval($_POST[$pre . $type . '_font_size'] ?? 16);
+            $data[$pre . $type . '_font_weight'] = intval($_POST[$pre . $type . '_font_weight'] ?? 400);
+            $data[$pre . $type . '_color']       = sanitize_hex_color($_POST[$pre . $type . '_color'] ?? '#333333');
+        }
+
+        foreach (['submit', 'cancel'] as $btn) {
+            $data[$pre . $btn . '_btn_text']   = sanitize_text_field($_POST[$pre . $btn . '_btn_text'] ?? '');
+            $data[$pre . $btn . '_btn_bg']     = sanitize_hex_color($_POST[$pre . $btn . '_btn_bg'] ?? '#2271b1');
+            $data[$pre . $btn . '_btn_clr']    = sanitize_hex_color($_POST[$pre . $btn . '_btn_clr'] ?? '#ffffff');
+            $data[$pre . $btn . '_btn_radius'] = intval($_POST[$pre . $btn . '_btn_radius'] ?? 6);
+        }
+    }
+
+    $wpdb->update("{$wpdb->prefix}pfb_forms", $data, ['id' => $form_id]);
+    $last_tab = isset($_POST['last_tab']) ? sanitize_text_field($_POST['last_tab']) : '#pfb-access-tab';
+    wp_redirect(admin_url("admin.php?page=pfb-form-settings&form_id={$form_id}&updated=1&tab=" . urlencode($last_tab)));
     exit;
 }
