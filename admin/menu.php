@@ -3,15 +3,13 @@
 if (!defined('ABSPATH')) exit;
 
 /**
- * 
  * Register Admin Menu and Submenus
- * 
  */
 add_action('admin_menu', 'pfb_register_admin_menu');
 
 function pfb_register_admin_menu() {
 
-    // MAIN MENU
+    // MAIN MENU: Pure Form Builder
     add_menu_page(
         'Pure Form Builder',
         'Form Builder',
@@ -32,7 +30,7 @@ function pfb_register_admin_menu() {
         'pfb_forms_list'
     );
 
-    // SUBMENU: Add New Form
+    // SUBMENU: Add New Form (Builder)
     add_submenu_page(
         'pfb-forms',
         'Add New Form',
@@ -42,7 +40,7 @@ function pfb_register_admin_menu() {
         'pfb_form_builder_page'
     );
 
-    // SUBMENU: Entries
+    // SUBMENU: Entries List
     add_submenu_page(
         'pfb-forms',
         'Entries',
@@ -52,7 +50,7 @@ function pfb_register_admin_menu() {
         'pfb_render_entries'
     );
 
-    //SINGLE ENTRY VIEW (HIDDEN PAGE)
+    // HIDDEN PAGE: Single Entry View
     add_submenu_page(
         null,
         'View Entry',
@@ -62,70 +60,58 @@ function pfb_register_admin_menu() {
         'pfb_render_entry_view_admin'
     );
 
-
-    // hidden edit page (no sidebar menu)
+    // HIDDEN PAGE: Edit Entry
     add_submenu_page(
         null,
         'Edit Entry',
         'Edit Entry',
         'manage_options',
         'pfb-entry-edit',
-        function () {
-            require PFB_PATH . 'admin/entry-edit.php';
-        }
+        'pfb_render_entry_edit_admin'
     );
 
-    // From Setting
-       add_submenu_page(
-        null, // Hidden page                
+    // HIDDEN PAGE: Form Settings
+    add_submenu_page(
+        null,
         'Form Settings',
         'Settings',
         'manage_options',
         'pfb-form-settings',
         'pfb_render_form_settings'
     );
-
-
-    // VIEW ENTRY (hidden admin page)
-    add_submenu_page(
-        null,
-        'View Entry',
-        'View Entry',
-        'manage_options',
-        'pfb-entry-view',
-        'pfb_render_entry_view_admin'
-    );
-
 }
 
+/* CALLBACK FUNCTIONS */
 
-
-/* CALLBACKS */
 function pfb_forms_list() {
     include PFB_PATH . 'admin/forms-list.php';
 }
 
-// Form Builder Page
 function pfb_form_builder_page() {
     include PFB_PATH . 'admin/form-builder.php';
 }
 
-// Entries Page
 function pfb_render_entries() {
     include PFB_PATH . 'admin/entries.php';
 }
 
-// Form Settings Page
 function pfb_render_form_settings() {
-
     if (!current_user_can('manage_options')) {
-        wp_die('Unauthorized');
+        wp_die('Unauthorized access.');
     }
-
-    require_once PFB_PATH . '/admin/form-settings.php';
+    require_once PFB_PATH . 'admin/form-settings.php';
 }
 
-// Single Entry View Page
 function pfb_render_entry_view_admin() {
+    if (!current_user_can('manage_options')) {
+        wp_die('Unauthorized access.');
+    }
     require_once PFB_PATH . 'admin/entry-view.php';
+}
+
+function pfb_render_entry_edit_admin() {
+    if (!current_user_can('manage_options')) {
+        wp_die('Unauthorized access.');
+    }
+    require_once PFB_PATH . 'admin/entry-edit.php';
 }

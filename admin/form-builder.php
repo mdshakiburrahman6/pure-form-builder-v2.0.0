@@ -1,7 +1,8 @@
 <?php
 /**
  * admin/form-builder.php
- * Final Version: Drag-and-Drop Sorting & Enhanced UI
+ * Verified Version: Drag-and-Drop, Conditional Logic (with Dynamic Dropdowns), and New Types.
+ * No Bengali comments or emojis included.
  */
 
 if (!defined('ABSPATH')) exit;
@@ -23,10 +24,41 @@ if ($edit_field_id) {
     $edit_field = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pfb_fields WHERE id=%d", $edit_field_id));
 }
 
-// All fields list for conditional logic builder
-$all_fields = $wpdb->get_results($wpdb->prepare("SELECT name, label FROM {$wpdb->prefix}pfb_fields WHERE form_id=%d AND is_fieldset = 0", $form_id));
+// Fetch all non-fieldset fields for conditional logic mapping
+$all_fields = $wpdb->get_results($wpdb->prepare(
+    "SELECT name, label, options FROM {$wpdb->prefix}pfb_fields WHERE form_id=%d AND is_fieldset = 0", 
+    $form_id
+));
 ?>
+<style>
+    /* Toast Notification Style */
+    #pfb-save-toast {
+        visibility: hidden;
+        min-width: 200px;
+        background-color: #008a22;
+        color: #fff;
+        text-align: center;
+        border-radius: 4px;
+        padding: 12px;
+        position: fixed;
+        z-index: 9999;
+        right: 30px;
+        bottom: 30px;
+        font-size: 14px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    #pfb-save-toast.show {
+        visibility: visible;
+        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
+    @-webkit-keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+    @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+    @-webkit-keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+    @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+</style>
 
+<div id="pfb-save-toast">Structure Saved!</div>
 <div class="wrap">
     <h1><?php echo $form_id ? 'Edit Form' : 'Create New Form'; ?></h1>
 
@@ -113,7 +145,7 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT name, label FROM {$wpdb-
                         </div>
                     </div>
                 </div>
-            <?php endforeach; else: echo '<p>No sections found. Start by adding a Section Header.</p>'; endif; ?>
+            <?php endforeach; else: echo '<p>No sections found.</p>'; endif; ?>
         </div>
 
         <hr>
@@ -134,10 +166,14 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT name, label FROM {$wpdb-
                             <option value="text" <?php selected($edit_field->type ?? '', 'text'); ?>>Text Input</option>
                             <option value="textarea" <?php selected($edit_field->type ?? '', 'textarea'); ?>>Textarea</option>
                             <option value="email" <?php selected($edit_field->type ?? '', 'email'); ?>>Email</option>
+                            <option value="tel" <?php selected($edit_field->type ?? '', 'tel'); ?>>Telephone (Tel)</option>
+                            <option value="url" <?php selected($edit_field->type ?? '', 'url'); ?>>URL</option>
                             <option value="number" <?php selected($edit_field->type ?? '', 'number'); ?>>Number</option>
                             <option value="select" <?php selected($edit_field->type ?? '', 'select'); ?>>Dropdown (Select)</option>
                             <option value="radio" <?php selected($edit_field->type ?? '', 'radio'); ?>>Radio Buttons</option>
+                            <option value="file" <?php selected($edit_field->type ?? '', 'file'); ?>>File Upload</option>
                             <option value="image" <?php selected($edit_field->type ?? '', 'image'); ?>>Image Upload</option>
+                            <option value="gallery" <?php selected($edit_field->type ?? '', 'gallery'); ?>>Image Gallery (Multiple)</option>
                         </select>
                     </td>
                 </tr>
@@ -166,6 +202,11 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT name, label FROM {$wpdb-
                         <textarea name="field_options" rows="3" class="large-text" placeholder="Option 1, Option 2, Option 3"><?php if (!empty($edit_field->options)) echo esc_textarea(implode(', ', json_decode($edit_field->options, true))); ?></textarea>
                         <p class="description">Comma separated list of choices.</p>
                     </td>
+                </tr>
+
+                <tr class="pfb-file-settings">
+                    <th>Max Size (MB)</th>
+                    <td><input type="number" step="0.1" name="max_size" value="<?php echo esc_attr($edit_field->max_size ?? 2); ?>" class="small-text"></td>
                 </tr>
 
                 <tr class="pfb-standard-field">
@@ -198,16 +239,52 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT name, label FROM {$wpdb-
             $('.pfb-fieldset-only').toggle(val === 'fieldset');
             $('.pfb-standard-field').toggle(val !== 'fieldset');
             $('.pfb-field-options-row').toggle(['select', 'radio'].includes(val));
+            $('.pfb-file-settings').toggle(['file', 'image', 'gallery'].includes(val));
         }
         typeSelect.on('change', toggleUI);
         toggleUI();
 
         // SORTABLE LOGIC
+        // $(".pfb-sections-list").sortable({
+        //     handle: ".pfb-section-header",
+        //     placeholder: "ui-state-highlight",
+        //     forcePlaceholderSize: true,
+        //     update: saveOrder
+        // });
+
+        // $(".pfb-fields-table tbody").sortable({
+        //     items: "tr:not(.no-fields)",
+        //     handle: ".pfb-drag-handle",
+        //     placeholder: "ui-state-highlight",
+        //     connectWith: ".pfb-fields-table tbody",
+        //     update: saveOrder
+        // });
+
+        // function saveOrder() {
+        //     let order = [];
+        //     $(".pfb-section-card").each(function() {
+        //         order.push($(this).data('id'));
+        //         $(this).find('tbody tr[data-id]').each(function() {
+        //             order.push($(this).data('id'));
+        //         });
+        //     });
+
+        //     $.post(ajaxurl, {
+        //         action: 'pfb_update_field_order',
+        //         order: order
+        //     }, function(res) {
+        //         if(res.success) console.log("Layout saved");
+        //     });
+        // }
+
+        // sorting handle koro ebong update function trigger koro
         $(".pfb-sections-list").sortable({
             handle: ".pfb-section-header",
             placeholder: "ui-state-highlight",
             forcePlaceholderSize: true,
-            update: saveOrder
+            update: function(event, ui) {
+                saveOrder(); // Auto-save when section is moved
+            }
         });
 
         $(".pfb-fields-table tbody").sortable({
@@ -215,23 +292,39 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT name, label FROM {$wpdb-
             handle: ".pfb-drag-handle",
             placeholder: "ui-state-highlight",
             connectWith: ".pfb-fields-table tbody",
-            update: saveOrder
+            update: function(event, ui) {
+                saveOrder(); // Auto-save when field is moved within or across sections
+            }
         });
 
         function saveOrder() {
             let order = [];
+            // Full hierarchy maintain kora hocche
             $(".pfb-section-card").each(function() {
-                order.push($(this).data('id'));
+                order.push($(this).data('id')); 
                 $(this).find('tbody tr[data-id]').each(function() {
-                    order.push($(this).data('id'));
+                    order.push($(this).data('id')); 
                 });
             });
 
-            $.post(ajaxurl, {
-                action: 'pfb_update_field_order',
-                order: order
-            }, function(res) {
-                if(res.success) console.log("Layout saved");
+            // AJAX call for auto-saving
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'pfb_update_field_order',
+                    order: order
+                },
+                success: function(res) {
+                    if(res.success) {
+                        // Success Toast dekhaw
+                        const toast = document.getElementById("pfb-save-toast");
+                        toast.className = "show";
+                        setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+                        
+                        console.log("Layout saved: " + res.data); //
+                    }
+                }
             });
         }
 
@@ -257,19 +350,47 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT name, label FROM {$wpdb-
         function addRuleRow(groupIndex, ruleData = null) {
             const container = $(`.rule-group[data-index="${groupIndex}"] .rules-list`);
             const ruleIndex = container.children().length;
+            
             let fieldOptions = allFields.map(f => `<option value="${f.name}" ${ruleData?.field === f.name ? 'selected' : ''}>${f.label}</option>`).join('');
             
             const html = `
                 <div class="rule-row" style="margin-bottom:10px;">
-                    IF <select name="rules[${groupIndex}][rules][${ruleIndex}][field]">${fieldOptions}</select>
+                    IF <select name="rules[${groupIndex}][rules][${ruleIndex}][field]" class="pfb-rule-field-select">${fieldOptions}</select>
                     <select name="rules[${groupIndex}][rules][${ruleIndex}][operator]">
                         <option value="is" ${ruleData?.operator === 'is' ? 'selected' : ''}>is</option>
                         <option value="is_not" ${ruleData?.operator === 'is_not' ? 'selected' : ''}>is not</option>
                     </select>
-                    <input type="text" name="rules[${groupIndex}][rules][${ruleIndex}][value]" value="${ruleData?.value || ''}" placeholder="value">
+                    <span class="pfb-rule-value-container">
+                        <input type="text" name="rules[${groupIndex}][rules][${ruleIndex}][value]" value="${ruleData?.value || ''}" placeholder="value">
+                    </span>
                     <button type="button" class="remove-rule" style="color:red; border:none; background:none; cursor:pointer;">&times;</button>
                 </div>`;
-            container.append(html);
+            
+            const $row = $(html);
+            container.append($row);
+
+            // Dynamic value input based on target field type
+            $row.find('.pfb-rule-field-select').on('change', function() {
+                const selectedFieldName = $(this).val();
+                const valueContainer = $(this).siblings('.pfb-rule-value-container');
+                const targetField = allFields.find(f => f.name === selectedFieldName);
+                
+                if (targetField && targetField.options) {
+                    try {
+                        const options = JSON.parse(targetField.options);
+                        if (Array.isArray(options) && options.length > 0) {
+                            let selectHtml = `<select name="rules[${groupIndex}][rules][${ruleIndex}][value]">`;
+                            options.forEach(opt => {
+                                selectHtml += `<option value="${opt}" ${ruleData?.value === opt ? 'selected' : ''}>${opt}</option>`;
+                            });
+                            selectHtml += `</select>`;
+                            valueContainer.html(selectHtml);
+                            return;
+                        }
+                    } catch (e) { console.error("Error parsing options", e); }
+                }
+                valueContainer.html(`<input type="text" name="rules[${groupIndex}][rules][${ruleIndex}][value]" value="${ruleData?.value || ''}" placeholder="value">`);
+            }).trigger('change');
         }
 
         function addGroup(groupData = null) {
@@ -302,5 +423,6 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT name, label FROM {$wpdb-
         .ui-state-highlight { height: 50px; background: #f0faff; border: 1px dashed #2271b1; margin-bottom: 20px; }
         .pfb-drag-handle:hover { color: #2271b1 !important; }
         .pfb-section-header h3 { font-size: 14px; color: #1d2327; }
+        .pfb-file-settings { display: none; }
     </style>
-</div> 
+</div>

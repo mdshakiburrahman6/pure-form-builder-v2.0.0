@@ -82,3 +82,9 @@ add_action('admin_enqueue_scripts', function ($hook) {
     // Enqueue jQuery UI sortable for drag-and-drop functionality   
     wp_enqueue_script('jquery-ui-sortable');
 });
+
+add_action('admin_enqueue_scripts', function($hook) {
+    if (strpos($hook, 'pfb-form-settings') !== false) {
+        wp_enqueue_media();
+    }
+});

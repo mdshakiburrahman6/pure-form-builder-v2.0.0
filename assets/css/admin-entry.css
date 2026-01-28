@@ -39,3 +39,13 @@
 .pfb-image-box .button {
     width: fit-content;
 }
+
+.button-link-delete:hover {
+    color: #9b2022 !important;
+}
+
+/* Checkbox select korle image-er opacity kome jabe */
+input[name="delete_image[]"]:checked ~ img,
+input[name="delete_image[]"]:checked + img {
+    opacity: 0.3;
+}

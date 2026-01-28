@@ -87,7 +87,8 @@ foreach ($meta_rows as $m) {
                                     case 'text':
                                     case 'number':
                                     case 'email':
-                                    case 'url': ?>
+                                    case 'url':
+                                    case 'tel': ?>
                                         <input type="<?php echo esc_attr($field->type); ?>" name="fields[<?php echo esc_attr($field->name); ?>]" value="<?php echo esc_attr($value); ?>" class="regular-text">
                                     <?php break; ?>
 
@@ -112,13 +113,47 @@ foreach ($meta_rows as $m) {
                                         <?php endforeach; break; ?>
 
                                     <?php case 'image': ?>
-                                        <?php if ($value): ?>
-                                            <div style="margin-bottom:10px;">
-                                                <img src="<?php echo esc_url($value); ?>" style="max-width:150px; border-radius:8px; border:1px solid #ddd; display:block;">
-                                                <label><input type="checkbox" name="delete_image[]" value="<?php echo esc_attr($field->name); ?>"> Remove image</label>
-                                            </div>
-                                        <?php endif; ?>
-                                        <input type="file" name="<?php echo esc_attr($field->name); ?>">
+                                        <div class="pfb-admin-media-item">
+                                            <?php if ($value): ?>
+                                                <div style="margin-bottom:12px;" class="pfb-media-preview-container">
+                                                    <img src="<?php echo esc_url($value); ?>" style="max-width:180px; border-radius:4px; border:1px solid #ddd; display:block; margin-bottom:8px;">
+                                                    
+                                                    <div class="pfb-remove-wrapper">
+                                                        <label style="color: #d63638; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;">
+                                                            <input type="checkbox" name="delete_image[]" value="<?php echo esc_attr($field->name); ?>" style="margin:0;"> 
+                                                            <span style="text-decoration: none;">Remove Image</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            <?php endif; ?>
+                                            <input type="file" name="<?php echo esc_attr($field->name); ?>" onchange="pfbLivePreview(this, 'single')">
+                                            <div class="pfb-new-preview" style="margin-top:10px;"></div>
+                                        </div>
+                                    <?php break; ?>
+
+                                    <?php case 'gallery': ?>
+                                        <div class="pfb-admin-media-item">
+                                            <?php 
+                                            $gallery = json_decode($value, true) ?: [];
+                                            if (!empty($gallery)): ?>
+                                                <div style="margin-bottom:12px;" class="pfb-media-preview-container">
+                                                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                                                        <?php foreach ($gallery as $img_url): ?>
+                                                            <img src="<?php echo esc_url($img_url); ?>" style="width:80px; height:80px; object-fit:cover; border-radius:4px; border:1px solid #ddd;">
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                    
+                                                    <div class="pfb-remove-wrapper">
+                                                        <label style="color: #d63638; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;">
+                                                            <input type="checkbox" name="delete_image[]" value="<?php echo esc_attr($field->name); ?>" style="margin:0;"> 
+                                                            <span style="text-decoration: none;">Remove Gallery</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            <?php endif; ?>
+                                            <input type="file" name="<?php echo esc_attr($field->name); ?>[]" multiple onchange="pfbLivePreview(this, 'gallery')">
+                                            <div class="pfb-new-preview" style="display:flex; gap:10px; margin-top:10px;"></div>
+                                        </div>
                                     <?php break; ?>
 
                                     <?php default: ?>
@@ -188,5 +223,40 @@ function applyAdminConditions() {
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(applyAdminConditions, 50);
     document.querySelector('.pfb-admin-form')?.addEventListener('change', applyAdminConditions);
+});
+
+
+
+</script>
+
+<script>
+function pfbLivePreview(input, type) {
+    const container = input.nextElementSibling; // div.pfb-new-preview
+    container.innerHTML = '';
+    if (input.files) {
+        Array.from(input.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.width = (type === 'gallery') ? '80px' : '150px';
+                img.style.borderRadius = '5px';
+                img.style.border = '2px dashed #2271b1';
+                container.appendChild(img);
+            }
+            reader.readAsDataURL(file);
+        });
+    }
+}
+</script>
+<script>
+document.addEventListener('change', function(e) {
+    if (e.target.name === 'delete_image[]') {
+        const preview = e.target.closest('.pfb-media-preview-container').querySelectorAll('img');
+        preview.forEach(img => {
+            img.style.opacity = e.target.checked ? '0.3' : '1';
+            img.style.filter = e.target.checked ? 'grayscale(100%)' : 'none';
+        });
+    }
 });
 </script>

@@ -34,7 +34,8 @@ $forms = $wpdb->get_results("SELECT * FROM $table ORDER BY id DESC");
                         <td><?php echo esc_html($form->id); ?></td>
                         <td><?php echo esc_html($form->name); ?></td>
                         <td>
-                            <code>[pfb_form id="<?php echo $form->id; ?>"]</code>
+                            <code id="pfb-shortcode-<?php echo $form->id; ?>">[pfb_form id="<?php echo $form->id; ?>"]</code>
+                            <button type="button" class="button button-small pfb-copy-btn" data-id="<?php echo $form->id; ?>">Copy</button>
                         </td>
                         <td>
                             <a href="<?php echo admin_url('admin.php?page=pfb-builder&form_id=' . $form->id); ?>">
@@ -63,3 +64,17 @@ $forms = $wpdb->get_results("SELECT * FROM $table ORDER BY id DESC");
         </table>
     <?php endif; ?>
 </div>
+
+<script>
+    jQuery(document).ready(function($) {
+        $('.pfb-copy-btn').on('click', function() {
+            const id = $(this).data('id');
+            const text = $('#pfb-shortcode-' + id).text();
+            navigator.clipboard.writeText(text);
+            
+            const btn = $(this);
+            btn.text('Copied!');
+            setTimeout(() => btn.text('Copy'), 2000);
+        });
+    });
+</script>

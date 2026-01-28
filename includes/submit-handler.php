@@ -1,7 +1,7 @@
 <?php
 /**
  * includes/submit-handler.php
- * Fixed: Single Entry Enforcement & Dynamic Redirect for Profile View
+ * Final Version: V2 Nested Support + Multi-File Gallery + Tel/URL Sanitization
  */
 
 if (!defined('ABSPATH')) exit;
@@ -21,19 +21,16 @@ function pfb_handle_form_submit() {
 
     if (!$form_id) wp_die('Invalid form');
 
-    // 1. SINGLE ENTRY ENFORCEMENT logic
+    // 1. SINGLE ENTRY ENFORCEMENT
     if ($user_id && !$entry_id) {
         $existing_entry_id = $wpdb->get_var($wpdb->prepare(
             "SELECT id FROM {$wpdb->prefix}pfb_entries WHERE form_id = %d AND user_id = %d",
             $form_id, $user_id
         ));
-
-        if ($existing_entry_id) {
-            $entry_id = $existing_entry_id;
-        }
+        if ($existing_entry_id) $entry_id = $existing_entry_id;
     }
 
-    // 2. FETCH ACTIVE INPUT FIELDS (Skip Fieldsets)
+    // 2. FETCH ACTIVE INPUT FIELDS
     $fields = $wpdb->get_results($wpdb->prepare(
         "SELECT * FROM {$wpdb->prefix}pfb_fields WHERE form_id = %d AND is_fieldset = 0",
         $form_id
@@ -43,14 +40,48 @@ function pfb_handle_form_submit() {
     $data   = [];
 
     foreach ($fields as $f) {
-        if (isset($f->is_fieldset) && (int)$f->is_fieldset === 1) {
-            continue;
-        }
-
         $name = $f->name;
         $value = '';
 
-        if (in_array($f->type, ['file', 'image'])) {
+        // --- TYPE: GALLERY (Multiple Image Upload) ---
+        if ($f->type === 'gallery') {
+            if (!empty($_FILES[$name]['name'][0])) {
+                require_once ABSPATH . 'wp-admin/includes/file.php';
+                require_once ABSPATH . 'wp-admin/includes/media.php';
+                require_once ABSPATH . 'wp-admin/includes/image.php';
+
+                $gallery_urls = [];
+                $files = $_FILES[$name];
+                
+                // WP does not support multi-upload natively in one go, so we loop
+                foreach ($files['name'] as $key => $val) {
+                    if ($files['name'][$key]) {
+                        $file = [
+                            'name'     => $files['name'][$key],
+                            'type'     => $files['type'][$key],
+                            'tmp_name' => $files['tmp_name'][$key],
+                            'error'    => $files['error'][$key],
+                            'size'     => $files['size'][$key]
+                        ];
+                        
+                        // Fake a single file for media_handle_upload
+                        $_FILES['pfb_temp_file'] = $file;
+                        $upload = media_handle_upload('pfb_temp_file', 0);
+                        
+                        if (!is_wp_error($upload)) {
+                            $gallery_urls[] = wp_get_attachment_url($upload);
+                        }
+                    }
+                }
+                $value = !empty($gallery_urls) ? wp_json_encode($gallery_urls) : '';
+            } elseif ($entry_id) {
+                // Keep existing gallery if no new files uploaded
+                $value = $wpdb->get_var($wpdb->prepare("SELECT field_value FROM {$wpdb->prefix}pfb_entry_meta WHERE entry_id=%d AND field_name=%s", $entry_id, $name));
+            }
+        } 
+        
+        // --- TYPE: FILE / IMAGE (Single Upload) ---
+        elseif (in_array($f->type, ['file', 'image'])) {
             if (!empty($_FILES[$name]['name'])) {
                 require_once ABSPATH . 'wp-admin/includes/file.php';
                 require_once ABSPATH . 'wp-admin/includes/media.php';
@@ -58,20 +89,27 @@ function pfb_handle_form_submit() {
 
                 $upload = media_handle_upload($name, 0);
                 if (is_wp_error($upload)) {
-                    if (!empty($f->required)) {
-                        $errors[$name] = $f->label;
-                    }
+                    if (!empty($f->required)) $errors[$name] = $f->label;
                 } else {
                     $value = wp_get_attachment_url($upload);
                 }
             } elseif ($entry_id) {
-                $value = $wpdb->get_var($wpdb->prepare(
-                    "SELECT field_value FROM {$wpdb->prefix}pfb_entry_meta WHERE entry_id=%d AND field_name=%s",
-                    $entry_id, $name
-                ));
+                $value = $wpdb->get_var($wpdb->prepare("SELECT field_value FROM {$wpdb->prefix}pfb_entry_meta WHERE entry_id=%d AND field_name=%s", $entry_id, $name));
             }
-        } else {
-            $value = isset($_POST[$name]) ? sanitize_text_field($_POST[$name]) : '';
+        } 
+        
+        // --- TYPE: STANDARD TEXT / URL / TEL ---
+        else {
+            $raw_val = isset($_POST[$name]) ? $_POST[$name] : '';
+            
+            if ($f->type === 'url') {
+                $value = esc_url_raw($raw_val);
+            } elseif ($f->type === 'tel') {
+                $value = sanitize_text_field($raw_val); // Basic sanitization for phone
+            } else {
+                $value = sanitize_text_field($raw_val);
+            }
+
             if (!empty($f->required) && trim($value) === '') {
                 $errors[$name] = $f->label;
             }
@@ -87,17 +125,27 @@ function pfb_handle_form_submit() {
     }
 
     // 4. SAVE (UPDATE OR INSERT)
-    $is_update = false;
     if ($entry_id) {
-        $is_update = true;
+        // Mode Update: Prothome ager shob meta delete kore nite hobe jate clean update hoy
+        // Athoba shudhu shei field gulo update korte hobe jeta submit hoyeche
         foreach ($data as $field => $val) {
-            $wpdb->replace("{$wpdb->prefix}pfb_entry_meta", [
-                'entry_id'    => $entry_id,
-                'field_name'  => $field,
-                'field_value' => $val
-            ], ['%d', '%s', '%s']);
+            $wpdb->update(
+                "{$wpdb->prefix}pfb_entry_meta",
+                ['field_value' => $val],
+                ['entry_id' => $entry_id, 'field_name' => $field]
+            );
+            
+            // Jodi update na hoy (orthat age row chhilo na), tobe insert korbe
+            if (!$wpdb->rows_affected) {
+                $wpdb->insert("{$wpdb->prefix}pfb_entry_meta", [
+                    'entry_id'    => $entry_id,
+                    'field_name'  => $field,
+                    'field_value' => $val
+                ]);
+            }
         }
     } else {
+        // Mode Insert (Thik ache)
         $wpdb->insert("{$wpdb->prefix}pfb_entries", [
             'form_id'    => $form_id,
             'user_id'    => $user_id ? $user_id : null,
@@ -115,10 +163,7 @@ function pfb_handle_form_submit() {
     }
 
     // 5. SUCCESS REDIRECT & CLEANUP
-    // remove_query_arg use kore puraton parameter clear korun
     $redirect_url = remove_query_arg(['edit', 'entry_id', 'pfb_errors'], wp_get_referer());
-    
-    // Safe Redirection
     wp_safe_redirect(add_query_arg('pfb_success', 1, $redirect_url));
     exit;
 }

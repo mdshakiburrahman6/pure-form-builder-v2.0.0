@@ -143,3 +143,17 @@ setTimeout(() => {
     const msg = document.querySelector('.pfb-success');
     if (msg) msg.remove();
 }, 4000); // 4 seconds
+
+// Initialize on window load to ensure all elements are available
+window.addEventListener('load', function() {
+    document.querySelectorAll('.pfb-form, .pfb-admin-form').forEach(init);
+});
+
+// File || Image Remove Btn
+$(document).on('change', 'input[name="pfb_remove_file[]"]', function() {
+    if($(this).is(':checked')) {
+        $(this).closest('.existing').css('opacity', '0.5');
+    } else {
+        $(this).closest('.existing').css('opacity', '1');
+    }
+});

@@ -1,7 +1,7 @@
 <?php
 /**
  * includes/admin-actions.php
- * Absolute Full Version: V2 Nested + Drag-and-Drop Sorting + All Admin Handlers
+ * Final Version: Fixed Fatal Error + Entry Delete + Gallery/Image Update Logic
  */
 
 if (!defined('ABSPATH')) exit;
@@ -14,8 +14,9 @@ add_action('admin_post_pfb_delete_form', 'pfb_handle_delete_form');
 add_action('admin_post_pfb_export_entries', 'pfb_export_entries_csv');
 add_action('admin_post_pfb_update_entry', 'pfb_handle_update_entry');
 add_action('admin_post_pfb_save_form_settings', 'pfb_save_form_settings');
+add_action('admin_post_pfb_delete_entry', 'pfb_handle_delete_entry'); // Delete entry action register
 
-// 🔥 AJAX Handler for Drag and Drop Sorting
+// AJAX Handler for Drag and Drop Sorting
 add_action('wp_ajax_pfb_update_field_order', 'pfb_handle_field_sorting');
 
 /* =========================
@@ -42,7 +43,7 @@ function pfb_handle_save_form() {
 }
 
 /* =========================
-   2. ADD / EDIT FIELD (V2)
+   2. ADD / EDIT FIELD
 ========================= */
 function pfb_handle_add_field() {
     if (!current_user_can('manage_options')) wp_die('Unauthorized');
@@ -50,14 +51,12 @@ function pfb_handle_add_field() {
 
     global $wpdb;
     $field_table = $wpdb->prefix . 'pfb_fields';
-
     $field_id    = isset($_POST['field_id']) ? intval($_POST['field_id']) : 0;
     $form_id     = intval($_POST['form_id']);
     $fieldset_id = isset($_POST['fieldset_id']) ? intval($_POST['fieldset_id']) : 0;
     $field_type  = sanitize_text_field($_POST['field_type']);
     $required    = isset($_POST['field_required']) ? 1 : 0;
 
-    // Rules logic (Conditional Logic)
     $rules = null;
     if (!empty($_POST['rules']) && is_array($_POST['rules'])) {
         $clean_groups = [];
@@ -99,7 +98,6 @@ function pfb_handle_add_field() {
         'fieldset_display' => sanitize_text_field($_POST['fieldset_display'] ?? 'show_always'),
         'file_types'       => sanitize_text_field($_POST['file_types'] ?? ''),
         'max_size'         => floatval($_POST['max_size'] ?? 0),
-        'min_size'         => floatval($_POST['min_size'] ?? 0),
     ];
 
     if ($field_id) {
@@ -113,52 +111,122 @@ function pfb_handle_add_field() {
 }
 
 /* =========================
-   3. DELETE FIELD
+   3. DELETE ENTRY Logic (Fixed Blank Page)
+========================= */
+function pfb_handle_delete_entry() {
+    if (!current_user_can('manage_options')) wp_die('Unauthorized');
+    
+    $entry_id = intval($_GET['entry_id'] ?? 0);
+    $form_id  = intval($_GET['form_id'] ?? 0);
+
+    if (!$entry_id || !check_admin_referer('pfb_delete_entry_' . $entry_id)) {
+        wp_die('Security check failed.');
+    }
+
+    global $wpdb;
+    $wpdb->delete("{$wpdb->prefix}pfb_entry_meta", ['entry_id' => $entry_id]);
+    $wpdb->delete("{$wpdb->prefix}pfb_entries", ['id' => $entry_id]);
+
+    wp_redirect(admin_url('admin.php?page=pfb-entries&form_id=' . $form_id . '&deleted=1'));
+    exit;
+}
+
+/* =========================
+   4. UPDATE ENTRY (Admin Edit Fix)
+========================= */
+function pfb_handle_update_entry() {
+    if (!current_user_can('manage_options')) wp_die('Unauthorized');
+    check_admin_referer('pfb_update_entry', 'pfb_nonce');
+    global $wpdb;
+
+    $entry_id = intval($_POST['entry_id'] ?? 0);
+    $form_id = $wpdb->get_var($wpdb->prepare("SELECT form_id FROM {$wpdb->prefix}pfb_entries WHERE id=%d", $entry_id));
+    if (!$form_id) wp_die('Invalid form');
+
+    $fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pfb_fields WHERE form_id=%d AND is_fieldset=0", $form_id));
+    $old_meta_rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pfb_entry_meta WHERE entry_id=%d", $entry_id));
+    $old_map = [];
+    foreach ($old_meta_rows as $m) { $old_map[$m->field_name] = $m->field_value; }
+
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/media.php';
+    require_once ABSPATH . 'wp-admin/includes/image.php';
+
+    foreach ($fields as $field) {
+        $value = '';
+        if ($field->type === 'image' || $field->type === 'gallery') {
+            // Remove Logic (Advanced UI Style)
+            if (!empty($_POST['delete_image']) && in_array($field->name, $_POST['delete_image'])) {
+                $value = ''; 
+            } 
+            // Upload Logic
+            elseif (!empty($_FILES[$field->name]['name']) && (is_array($_FILES[$field->name]['name']) ? !empty($_FILES[$field->name]['name'][0]) : !empty($_FILES[$field->name]['name']))) {
+                if ($field->type === 'gallery') {
+                    $urls = [];
+                    foreach ($_FILES[$field->name]['name'] as $k => $v) {
+                        if (!$v) continue;
+                        $_FILES['pfb_tmp'] = [
+                            'name' => $_FILES[$field->name]['name'][$k],
+                            'type' => $_FILES[$field->name]['type'][$k],
+                            'tmp_name' => $_FILES[$field->name]['tmp_name'][$k],
+                            'error' => $_FILES[$field->name]['error'][$k],
+                            'size' => $_FILES[$field->name]['size'][$k]
+                        ];
+                        $up = media_handle_upload('pfb_tmp', 0);
+                        if (!is_wp_error($up)) $urls[] = wp_get_attachment_url($up);
+                    }
+                    $value = wp_json_encode($urls);
+                } else {
+                    $up = media_handle_upload($field->name, 0);
+                    $value = (!is_wp_error($up)) ? wp_get_attachment_url($up) : ($old_map[$field->name] ?? '');
+                }
+            } else {
+                $value = $old_map[$field->name] ?? '';
+            }
+        } else {
+            $value = sanitize_text_field($_POST['fields'][$field->name] ?? '');
+        }
+
+        $wpdb->replace("{$wpdb->prefix}pfb_entry_meta", [
+            'entry_id'    => $entry_id,
+            'field_name'  => $field->name,
+            'field_value' => $value
+        ]);
+    }
+    wp_redirect(admin_url('admin.php?page=pfb-entry-edit&entry_id=' . $entry_id . '&updated=1'));
+    exit;
+}
+
+/* =========================
+   5. OTHER ACTIONS (Export, Settings, Field Sorting, etc.)
 ========================= */
 function pfb_handle_delete_field() {
     if (!current_user_can('manage_options')) wp_die('Unauthorized');
     $field_id = intval($_GET['field_id']);
     $form_id  = intval($_GET['form_id']);
     check_admin_referer('pfb_delete_field_' . $field_id);
-
     global $wpdb;
     $wpdb->delete($wpdb->prefix . 'pfb_fields', ['id' => $field_id]);
     wp_redirect(admin_url('admin.php?page=pfb-builder&form_id=' . $form_id . '&field_deleted=1'));
     exit;
 }
 
-/* =========================
-   4. 🔥 FIELD SORTING (AJAX)
-========================= */
 function pfb_handle_field_sorting() {
     if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
-
     global $wpdb;
-    $order = $_POST['order'] ?? []; 
-
-    if (!empty($order)) {
+    $order = isset($_POST['order']) ? $_POST['order'] : []; 
+    if (!empty($order) && is_array($order)) {
         foreach ($order as $index => $field_id) {
-            $wpdb->update(
-                "{$wpdb->prefix}pfb_fields",
-                ['sort_order' => $index],
-                ['id' => intval($field_id)]
-            );
+            $wpdb->update("{$wpdb->prefix}pfb_fields", ['sort_order' => $index], ['id' => intval($field_id)]);
         }
-        wp_send_json_success('Order updated!');
-    } else {
-        wp_send_json_error('No order data received.');
-    }
+        wp_send_json_success('Saved!');
+    } else { wp_send_json_error('No data'); }
 }
 
-/* =========================
-   5. DELETE FORM & DATA
-========================= */
 function pfb_handle_delete_form() {
     if (!current_user_can('manage_options')) wp_die('Unauthorized');
     $form_id = isset($_GET['form_id']) ? intval($_GET['form_id']) : 0;
-    if (!$form_id) wp_die('Invalid form ID');
     check_admin_referer('pfb_delete_form_' . $form_id);
-
     global $wpdb;
     $entry_ids = $wpdb->get_col($wpdb->prepare("SELECT id FROM {$wpdb->prefix}pfb_entries WHERE form_id = %d", $form_id));
     if (!empty($entry_ids)) {
@@ -168,96 +236,45 @@ function pfb_handle_delete_form() {
     $wpdb->delete("{$wpdb->prefix}pfb_entries", ['form_id' => $form_id]);
     $wpdb->delete("{$wpdb->prefix}pfb_fields", ['form_id' => $form_id]);
     $wpdb->delete("{$wpdb->prefix}pfb_forms", ['id' => $form_id]);
-
     wp_redirect(admin_url('admin.php?page=pfb-forms&deleted=1'));
     exit;
 }
 
-/* =========================
-   6. EXPORT ENTRIES TO CSV
-========================= */
 function pfb_export_entries_csv() {
     if (!current_user_can('manage_options')) wp_die('Unauthorized');
     global $wpdb;
     $form_id = intval($_GET['form_id']);
     $entries = $wpdb->get_results($wpdb->prepare("SELECT e.id, e.created_at, u.user_login FROM {$wpdb->prefix}pfb_entries e LEFT JOIN {$wpdb->users} u ON e.user_id = u.ID WHERE e.form_id = %d ORDER BY e.id DESC", $form_id));
     $all_fields = $wpdb->get_col($wpdb->prepare("SELECT DISTINCT em.field_name FROM {$wpdb->prefix}pfb_entry_meta em INNER JOIN {$wpdb->prefix}pfb_entries e ON em.entry_id = e.id WHERE e.form_id = %d ORDER BY em.field_name ASC", $form_id));
-    
     if (!$entries) wp_die('No entries found.');
-
     header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="form-entries-export.csv"');
+    header('Content-Disposition: attachment; filename="export.csv"');
     $output = fopen('php://output', 'w');
-    fputcsv($output, array_merge(['Entry ID', 'User', 'Date'], $all_fields));
-
+    fputcsv($output, array_merge(['ID', 'User', 'Date'], $all_fields));
     foreach ($entries as $entry) {
         $meta = $wpdb->get_results($wpdb->prepare("SELECT field_name, field_value FROM {$wpdb->prefix}pfb_entry_meta WHERE entry_id = %d", $entry->id));
-        $values_map = array_fill_keys($all_fields, '');
-        foreach ($meta as $m) $values_map[$m->field_name] = $m->field_value;
-        fputcsv($output, array_merge([$entry->id, $entry->user_login ?: 'Guest', $entry->created_at], array_values($values_map)));
+        $values = array_fill_keys($all_fields, '');
+        foreach ($meta as $m) $values[$m->field_name] = $m->field_value;
+        fputcsv($output, array_merge([$entry->id, $entry->user_login ?: 'Guest', $entry->created_at], array_values($values)));
     }
     fclose($output);
     exit;
 }
 
-/* =========================
-   7. UPDATE ENTRY (ADMIN)
-========================= */
-function pfb_handle_update_entry() {
-    if (!current_user_can('manage_options')) wp_die('Unauthorized');
-    check_admin_referer('pfb_update_entry', 'pfb_nonce');
-    global $wpdb;
-    $entry_id = intval($_POST['entry_id'] ?? 0);
-    $form_id = $wpdb->get_var($wpdb->prepare("SELECT form_id FROM {$wpdb->prefix}pfb_entries WHERE id=%d", $entry_id));
-    if (!$form_id) wp_die('Invalid form');
-
-    $fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pfb_fields WHERE form_id=%d", $form_id));
-    $old_meta_rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pfb_entry_meta WHERE entry_id=%d", $entry_id));
-    $old_map = [];
-    foreach ($old_meta_rows as $m) $old_map[$m->field_name] = $m->field_value;
-
-    // Delete old meta and save new
-    $wpdb->delete("{$wpdb->prefix}pfb_entry_meta", ['entry_id' => $entry_id]);
-
-    foreach ($fields as $field) {
-        if ($field->type === 'image') {
-            if (!empty($_POST['delete_image']) && in_array($field->name, $_POST['delete_image'])) continue;
-            if (!empty($_FILES[$field->name]['name'])) {
-                require_once ABSPATH . 'wp-admin/includes/file.php';
-                $upload = wp_handle_upload($_FILES[$field->name], ['test_form' => false]);
-                if (!empty($upload['url'])) {
-                    $wpdb->insert("{$wpdb->prefix}pfb_entry_meta", ['entry_id' => $entry_id, 'field_name' => $field->name, 'field_value' => esc_url_raw($upload['url'])]);
-                    continue;
-                }
-            }
-            if (!empty($old_map[$field->name])) $wpdb->insert("{$wpdb->prefix}pfb_entry_meta", ['entry_id' => $entry_id, 'field_name' => $field->name, 'field_value' => $old_map[$field->name]]);
-        } elseif (isset($_POST['fields'][$field->name])) {
-            $wpdb->insert("{$wpdb->prefix}pfb_entry_meta", ['entry_id' => $entry_id, 'field_name' => $field->name, 'field_value' => sanitize_text_field($_POST['fields'][$field->name])]);
-        }
-    }
-    wp_redirect(admin_url('admin.php?page=pfb-entry-edit&entry_id=' . $entry_id . '&updated=1'));
-    exit;
-}
-
-/* =========================
-   8. SAVE FORM SETTINGS
-========================= */
 function pfb_save_form_settings() {
     if (!current_user_can('manage_options')) wp_die('Permission denied');
     check_admin_referer('pfb_save_form_settings', 'pfb_settings_nonce');
-
     global $wpdb;
     $form_id = intval($_POST['form_id']);
     $allowed_roles = isset($_POST['allowed_roles']) ? implode(',', array_map('sanitize_text_field', $_POST['allowed_roles'])) : null;
-
     $wpdb->update("{$wpdb->prefix}pfb_forms", [
-        'access_type'     => sanitize_text_field($_POST['access_type'] ?? 'all'),
-        'allowed_roles'   => $allowed_roles,
-        'redirect_type'   => sanitize_text_field($_POST['redirect_type'] ?? 'message'),
-        'redirect_page'   => intval($_POST['redirect_page'] ?? 0),
+        'access_type' => sanitize_text_field($_POST['access_type'] ?? 'all'),
+        'allowed_roles' => $allowed_roles,
         'allow_user_edit' => isset($_POST['allow_user_edit']) ? 1 : 0,
+        'primary_color' => sanitize_hex_color($_POST['primary_color']),
+        'button_text_color' => sanitize_hex_color($_POST['button_text_color']),
+        'form_bg_image' => esc_url_raw($_POST['form_bg_image']),
     ], ['id' => $form_id]);
-
     wp_redirect(admin_url("admin.php?page=pfb-form-settings&form_id={$form_id}&updated=1"));
     exit;
 }
