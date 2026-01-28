@@ -57,7 +57,9 @@ add_action('wp_enqueue_scripts', function () {
     );
 });
 
+// Admin scripts and styles
 add_action('admin_enqueue_scripts', function ($hook) {
+    // Enqueue admin CSS only on specific pages
     if (
         isset($_GET['page']) &&
         in_array($_GET['page'], ['pfb-entry-view', 'pfb-entry-edit'])
@@ -69,6 +71,7 @@ add_action('admin_enqueue_scripts', function ($hook) {
             '1.0'
         );
     }
+    // Enqueue admin CSS
     wp_enqueue_script(
         'pfb-conditional',
         PFB_URL . 'assets/js/conditional.js',
@@ -76,5 +79,6 @@ add_action('admin_enqueue_scripts', function ($hook) {
         '1.0',
         true
     );
+    // Enqueue jQuery UI sortable for drag-and-drop functionality   
     wp_enqueue_script('jquery-ui-sortable');
 });
