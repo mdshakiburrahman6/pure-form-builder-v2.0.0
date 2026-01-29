@@ -36,26 +36,51 @@ add_shortcode('pfb_form', function ($atts) {
 add_shortcode('pfb_my_entry', 'pfb_render_my_entry');
 
 function pfb_render_my_entry($atts) {
-    if (!is_user_logged_in()) return '<p>Please login to view your profile.</p>';
-    global $wpdb;
-    $form_id = intval($atts['form_id'] ?? 0);
-    
-    if (!$form_id) {
-        $page_id = get_queried_object_id();
-        if ($page_id) $form_id = intval(get_post_meta($page_id, 'pfb_form_id', true));
+    if (!is_user_logged_in()) {
+        return '<p>Please login to view your profile.</p>';
     }
-    
-    if (!$form_id) return '<p>Form not assigned to this page.</p>';
 
-    $user_id = get_current_user_id();
-    $entry_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$wpdb->prefix}pfb_entries WHERE form_id = %d AND user_id = %d", $form_id, $user_id));
-    
-    if (!$entry_id) return do_shortcode('[pfb_form id="'.$form_id.'"]');
-    
-    if (isset($_GET['edit']) && $_GET['edit'] == 1) {
-        return do_shortcode('[pfb_form id="'.$form_id.'" entry_id="'.$entry_id.'"]');
+    global $wpdb;
+
+    // ১. ফর্ম আইডি ডিটেকশন (প্লাগিনের সব ফাইলের সাথে সিঙ্ক করা)
+    $atts    = shortcode_atts(['form_id' => 0], $atts);
+    $form_id = intval($atts['form_id']);
+
+    // যদি শর্টকোডে আইডি না থাকে, তবে পেজ মেটা থেকে আইডি নেওয়ার চেষ্টা করবে
+    if (!$form_id) {
+        $page_id = get_the_ID();
+        if ($page_id) {
+            $form_id = intval(get_post_meta($page_id, 'pfb_form_id', true));
+        }
     }
-    
+
+    // এখনো আইডি না থাকলে এরর দেখাবে
+    if (!$form_id) {
+        return '<p>Error: Please provide a valid form_id in the shortcode.</p>';
+    }
+
+    $user_id  = get_current_user_id();
+
+    // ২. ডাটাবেস থেকে ওই নির্দিষ্ট ফর্মের এন্ট্রি খোঁজা
+    $entry_id = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT id FROM {$wpdb->prefix}pfb_entries WHERE form_id = %d AND user_id = %d ORDER BY id DESC LIMIT 1",
+            $form_id,
+            $user_id
+        )
+    );
+
+    // ৩. যদি ডাটা না থাকে, তবে নতুন সাবমিশন ফর্ম দেখাবে
+    if (!$entry_id) {
+        return do_shortcode('[pfb_form id="' . $form_id . '"]');
+    }
+
+    // ৪. এডিট মোড হ্যান্ডেল করা
+    if (isset($_GET['edit']) && intval($_GET['edit']) === 1) {
+        return do_shortcode('[pfb_form id="' . $form_id . '" entry_id="' . $entry_id . '"]');
+    }
+
+    // ৫. ভিউ মোড রেন্ডার করা
     return pfb_render_entry_view($entry_id, $form_id);
 }
 
