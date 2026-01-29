@@ -105,6 +105,16 @@ function pfb_render_full_designer($prefix, $form) {
                 <input type="text" name="<?php echo $prefix.$b_key; ?>_btn_text" value="<?php echo esc_attr($form->{$prefix.$b_key.'_btn_text'} ?? ($b_key === 'submit' ? 'Submit' : 'Cancel')); ?>" class="regular-text">
             </div>
             <div class="pfb-input-row">
+                <label><strong>Font Size</strong></label>
+                <input type="number" name="<?php echo $prefix.$b_key; ?>_btn_size" value="<?php echo esc_attr($form->{$prefix.$b_key.'_btn_size'} ?? 16); ?>"> <span>px</span>
+            </div>
+            <div class="pfb-input-row">
+                <label><strong>Font Weight</strong></label>
+                <select name="<?php echo $prefix.$b_key; ?>_btn_weight">
+                    <?php foreach([300,400,500,600,700,800] as $w) echo '<option value="'.$w.'" '.selected(($form->{$prefix.$b_key.'_btn_weight'} ?? 600), $w, false).'>'.$w.'</option>'; ?>
+                </select>
+            </div>
+            <div class="pfb-input-row">
                 <label><strong>Background Color</strong></label>
                 <input type="color" name="<?php echo $prefix.$b_key; ?>_btn_bg" value="<?php echo esc_attr($form->{$prefix.$b_key.'_btn_bg'} ?? ($b_key === 'submit' ? '#2271b1' : '#eeeeee')); ?>">
             </div>

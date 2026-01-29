@@ -197,9 +197,10 @@ if (!function_exists('pfb_render_entry_view')) {
                 background-color: <?php echo esc_attr($form->{$pre.'submit_btn_bg'}); ?> !important; 
                 color: <?php echo esc_attr($form->{$pre.'submit_btn_clr'}); ?> !important; 
                 border-radius: <?php echo intval($form->{$pre.'submit_btn_radius'}); ?>px !important;
+                font-size: <?php echo intval($form->{$pre.'submit_btn_size'}); ?>px !important; /* Dynamically added */
+                font-weight: <?php echo intval($form->{$pre.'submit_btn_weight'}); ?> !important; /* Dynamically added */
                 padding: 12px 30px;
                 text-decoration: none;
-                font-weight: 600;
             }
             .pfb-btn-back-custom { 
                 background-color: <?php echo esc_attr($form->{$pre.'cancel_btn_bg'}); ?> !important; 
@@ -210,6 +211,7 @@ if (!function_exists('pfb_render_entry_view')) {
                 font-weight: 600;
                 border: 1px solid #ccc;
             }
+            
         </style>
 
         <div class="pfb-profile-container-<?php echo $form_id; ?>">

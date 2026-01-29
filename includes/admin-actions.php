@@ -300,6 +300,8 @@ function pfb_save_form_settings() {
             $data[$pre . $btn . '_btn_clr']    = sanitize_hex_color($_POST[$pre . $btn . '_btn_clr'] ?? '#ffffff');
             $data[$pre . $btn . '_btn_radius'] = intval($_POST[$pre . $btn . '_btn_radius'] ?? 6);
             $data[$pre . $btn . '_btn_align']  = sanitize_text_field($_POST[$pre . $btn . '_btn_align'] ?? 'flex-start');
+            $data[$pre . $btn . '_btn_size']   = intval($_POST[$pre . $btn . '_btn_size'] ?? 16);
+            $data[$pre . $btn . '_btn_weight'] = intval($_POST[$pre . $btn . '_btn_weight'] ?? 600);
         }
     }
 

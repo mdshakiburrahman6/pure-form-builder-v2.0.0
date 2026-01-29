@@ -104,6 +104,18 @@ function pfb_activate() {
         view_image_preview_width int(11) DEFAULT 100,
         edit_image_preview_width int(11) DEFAULT 100,
         submit_image_preview_width int(11) DEFAULT 100,
+        view_submit_btn_size int(11) DEFAULT 16,
+        view_submit_btn_weight int(11) DEFAULT 600,
+        view_cancel_btn_size int(11) DEFAULT 16,
+        view_cancel_btn_weight int(11) DEFAULT 400,
+        edit_submit_btn_size int(11) DEFAULT 16,
+        edit_submit_btn_weight int(11) DEFAULT 600,
+        edit_cancel_btn_size int(11) DEFAULT 16,
+        edit_cancel_btn_weight int(11) DEFAULT 400,
+        submit_submit_btn_size int(11) DEFAULT 16,
+        submit_submit_btn_weight int(11) DEFAULT 600,
+        submit_cancel_btn_size int(11) DEFAULT 16,
+        submit_cancel_btn_weight int(11) DEFAULT 400,
         created_at datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY  (id)
     ) $charset;";
