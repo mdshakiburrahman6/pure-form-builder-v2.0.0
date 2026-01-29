@@ -35,6 +35,9 @@ add_shortcode('pfb_form', function ($atts) {
 // [pfb_my_entry form_id="X"] - Profile/Entry view handler
 add_shortcode('pfb_my_entry', 'pfb_render_my_entry');
 
+/**
+ * Universal Profile View Handler
+ */
 function pfb_render_my_entry($atts) {
     if (!is_user_logged_in()) {
         return '<p>Please login to view your profile.</p>';
@@ -42,35 +45,47 @@ function pfb_render_my_entry($atts) {
 
     global $wpdb;
 
-    // ১. ফর্ম আইডি ডিটেকশন (প্লাগিনের সব ফাইলের সাথে সিঙ্ক করা)
-    $atts    = shortcode_atts(['form_id' => 0], $atts);
+    /**
+     * ১. ফর্ম আইডি ডিটেকশন (সবচেয়ে নির্ভরযোগ্য পদ্ধতি)
+     * নতুন পেজে get_the_ID() অনেক সময় কনফ্লিক্ট করে, তাই আমরা সরাসরি 
+     * শর্টকোড অ্যাট্রিবিউটকে প্রধান গুরুত্ব দিচ্ছি।
+     */
+    $atts = shortcode_atts(['form_id' => 0], $atts);
     $form_id = intval($atts['form_id']);
 
-    // যদি শর্টকোডে আইডি না থাকে, তবে পেজ মেটা থেকে আইডি নেওয়ার চেষ্টা করবে
-    if (!$form_id) {
-        $page_id = get_the_ID();
-        if ($page_id) {
-            $form_id = intval(get_post_meta($page_id, 'pfb_form_id', true));
-        }
+    // যদি শর্টকোডে আইডি না থাকে, তবে ইউআরএল থেকে খোঁজার চেষ্টা করবে
+    if (!$form_id && isset($_GET['pfb_form_id'])) {
+        $form_id = intval($_GET['pfb_form_id']);
     }
 
-    // এখনো আইডি না থাকলে এরর দেখাবে
+    // ব্যাকআপ হিসেবে পেজ মেটা চেক করা
     if (!$form_id) {
-        return '<p>Error: Please provide a valid form_id in the shortcode.</p>';
+        $page_id = get_queried_object_id();
+        $form_id = intval(get_post_meta($page_id, 'pfb_form_id', true));
     }
 
-    $user_id  = get_current_user_id();
+    // যদি কোনোভাবেই আইডি না পাওয়া যায়
+    if (!$form_id) {
+        return '<p style="color:red;">Error: form_id missing. Use [pfb_my_entry form_id="5"]</p>';
+    }
 
-    // ২. ডাটাবেস থেকে ওই নির্দিষ্ট ফর্মের এন্ট্রি খোঁজা
+    $user_id = get_current_user_id();
+
+    /**
+     * ২. এন্ট্রি ডিটেকশন লজিক
+     * নতুন পেজ বা স্লাগ যাই হোক, ইউজার আইডি এবং ফর্ম আইডি মিললে ডাটা দেখাবে।
+     */
     $entry_id = $wpdb->get_var(
         $wpdb->prepare(
-            "SELECT id FROM {$wpdb->prefix}pfb_entries WHERE form_id = %d AND user_id = %d ORDER BY id DESC LIMIT 1",
+            "SELECT id FROM {$wpdb->prefix}pfb_entries 
+             WHERE form_id = %d AND user_id = %d 
+             ORDER BY id DESC LIMIT 1",
             $form_id,
             $user_id
         )
     );
 
-    // ৩. যদি ডাটা না থাকে, তবে নতুন সাবমিশন ফর্ম দেখাবে
+    // ৩. ডাটা না থাকলে সাবমিশন ফর্ম দেখাবে
     if (!$entry_id) {
         return do_shortcode('[pfb_form id="' . $form_id . '"]');
     }
@@ -225,14 +240,14 @@ if (!function_exists('pfb_render_entry_view')) {
                 font-size: <?php echo intval($form->{$pre.'submit_btn_size'}); ?>px !important; /* Dynamically added */
                 font-weight: <?php echo intval($form->{$pre.'submit_btn_weight'}); ?> !important; /* Dynamically added */
                 padding: 12px 30px;
-                text-decoration: none;
+                text-decoration: none !important;
             }
             .pfb-btn-back-custom { 
                 background-color: <?php echo esc_attr($form->{$pre.'cancel_btn_bg'}); ?> !important; 
                 color: <?php echo esc_attr($form->{$pre.'cancel_btn_clr'}); ?> !important; 
                 border-radius: <?php echo intval($form->{$pre.'cancel_btn_radius'}); ?>px !important;
                 padding: 12px 30px;
-                text-decoration: none;
+                text-decoration: none !important;
                 font-weight: 600;
                 border: 1px solid #ccc;
             }
@@ -308,10 +323,21 @@ if (!function_exists('pfb_render_entry_view')) {
                 </div>
 
                 <div class="pfb-view-footer">
-                    <a class="pfb-btn-edit-custom" href="<?php echo esc_url(add_query_arg('edit', 1)); ?>">
+                    <a class="pfb-btn-edit-custom" href="<?php echo esc_url(
+                            add_query_arg([
+                                'edit' => 1,
+                                'pfb_form_id' => $form_id
+                            ])
+                        ); ?>"
+                        ?>
                         <?php echo esc_html($form->{$pre.'submit_btn_text'}); ?>
                     </a>
-                    <a class="pfb-btn-back-custom" href="<?php echo esc_url(remove_query_arg(['entry_id', 'edit'])); ?>">
+                    <a class="pfb-btn-back-custom" href="<?php echo esc_url(
+                            add_query_arg([
+                                'pfb_form_id' => $form_id
+                            ], remove_query_arg(['edit']))
+                        ); ?>"
+>
                         <?php echo esc_html($form->{$pre.'cancel_btn_text'}); ?>
                     </a>
                 </div>
