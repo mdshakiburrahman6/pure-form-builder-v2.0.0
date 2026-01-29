@@ -51,7 +51,7 @@ echo "<style>
         grid-template-columns: repeat({$cols}, 1fr);
         gap: " . intval($form->{$pre.'field_spacing'}) . "px;
         margin-bottom: 30px;
-        border: 1px solid #ddd;
+        border: none !important;
         padding: 20px;
         border-radius: 8px;
     }
@@ -59,7 +59,7 @@ echo "<style>
     /* Header Gap & Heading Typography */
     .pfb-form-{$id} legend {
         grid-column: 1 / -1;
-        padding: 0 10px;
+        padding: 0px;
         margin-bottom: " . intval($form->{$pre.'header_gap'}) . "px;
         color: " . esc_attr($form->{$pre.'heading_color'}) . ";
         font-size: " . intval($form->{$pre.'heading_font_size'}) . "px;
@@ -126,16 +126,23 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
         <?php 
         $opened_fieldset = false;
         foreach ($all_fields as $f) : 
+            /* - Update the Fieldset Loop section */
+
             if ($f->is_fieldset) {
                 if ($opened_fieldset) echo '</fieldset>';
                 
                 $bg_style = "";
-                if (!empty($f->section_bg_image)) {
-                    $opacity = $f->section_bg_opacity;
-                    $bg_style = "background: linear-gradient(rgba(255,255,255,".(1 - $opacity)."), rgba(255,255,255,".(1 - $opacity).")), url('".esc_url($f->section_bg_image)."'); background-size: cover;";
-                }
+                
+                /** * Logic: Disable background image for Submit and Edit modes.
+                 * Background is only rendered if it's NOT an edit session and NOT a standard form submission view.
+                 * For this specific requirement, we set $bg_style to empty to ensure clean Submit/Edit pages.
+                 */
+                
+                // Check if the current context is strictly for the 'View Profile' (handled by shortcode.php)
+                // In renderer.php (used for Submit/Edit), we keep the background empty.
+                $bg_style = ""; 
 
-                echo '<fieldset class="pfb-section-wrapper" style="'.$bg_style.'">';
+                echo '<fieldset class="pfb-section-wrapper" style="' . $bg_style . '">';
                 echo '<legend>' . esc_html($f->label) . '</legend>';
                 $opened_fieldset = true;
                 continue;

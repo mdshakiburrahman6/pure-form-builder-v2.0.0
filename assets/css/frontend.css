@@ -12,7 +12,7 @@
 /* Section Grouping Style (V2) */
 .pfb-section-wrapper {
     margin-bottom: 35px !important;
-    border: 1px solid #e0e0e0 !important;
+    border: none !important;
     padding: 25px !important;
     border-radius: 10px !important;
     background: #fdfdfd;
@@ -21,7 +21,7 @@
 .pfb-section-wrapper legend {
     display: block !important;
     visibility: visible !important;
-    padding: 0 15px !important;
+    padding: 0px !important;
     font-weight: 700 !important;
     font-size: 1.25em !important;
     color: #2271b1;
@@ -76,10 +76,10 @@
     gap: 15px;
 }
 .pfb-info-item {
-    background: #f8f9fa;
-    padding: 18px;
+    /* background: #f8f9fa; */
+    /* padding: 18px; */
     border-radius: 8px;
-    border-left: 5px solid #3498db;
+    /* border-left: 5px solid #ffae00; */
 }
 
 .pfb-info-item.full-width { grid-column: span 1; } /* Desktop e span fixed hobe query te */
@@ -211,11 +211,15 @@
  * Layout Grid System
  * Synchronized with dynamic settings from renderer.php
  */
-.pfb-section-wrapper {
+/* .pfb-section-wrapper {
     display: grid;
-    grid-template-columns: 1fr; /* Default single column for mobile devices */
+    grid-template-columns: 1fr; 
     width: 100%;
+    border: none !important;
 }
+.pfb-section-wrapper legend{
+    padding: 0px !important;
+} */
 
 /**
  * Responsive Desktop Layout

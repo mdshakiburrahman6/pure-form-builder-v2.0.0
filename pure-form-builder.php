@@ -84,7 +84,8 @@ add_action('admin_enqueue_scripts', function ($hook) {
 });
 
 add_action('admin_enqueue_scripts', function($hook) {
-    if (strpos($hook, 'pfb-form-settings') !== false) {
+    // Ensure media library is loaded on the form builder page
+    if (strpos($hook, 'pfb-builder') !== false) {
         wp_enqueue_media();
     }
 });

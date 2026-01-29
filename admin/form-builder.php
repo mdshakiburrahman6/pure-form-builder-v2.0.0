@@ -190,11 +190,20 @@ $all_fields = $wpdb->get_results($wpdb->prepare(
                 <tr class="pfb-fieldset-only">
                     <th>Section Background</th>
                     <td>
+                        <div id="pfb_section_bg_preview_container" style="margin-bottom:10px;">
+                            <?php if (!empty($edit_field->section_bg_image)): ?>
+                                <img src="<?php echo esc_url($edit_field->section_bg_image); ?>" id="pfb_section_bg_preview" style="max-width:200px; border:1px solid #ccc; padding:5px; border-radius:4px; display:block;">
+                                <button type="button" class="button button-link-delete" id="pfb_remove_section_bg" style="color:red; text-decoration:none; padding:0; margin-top:5px;">Remove Image</button>
+                            <?php else: ?>
+                                <img id="pfb_section_bg_preview" style="max-width:200px; border:1px solid #ccc; padding:5px; border-radius:4px; display:none;">
+                            <?php endif; ?>
+                        </div>
+
                         <input type="text" name="section_bg_image" id="pfb_section_bg_url" value="<?php echo esc_attr($edit_field->section_bg_image ?? ''); ?>" class="regular-text">
                         <button type="button" class="button pfb-section-bg-upload">Select Image</button>
+                        
                         <div style="margin-top:10px;">
                             Opacity: <input type="number" name="section_bg_opacity" step="0.1" min="0" max="1" value="<?php echo esc_attr($edit_field->section_bg_opacity ?? 1.0); ?>" class="small-text">
-                            <p class="description">0.0 (Invisible) to 1.0 (Full Color)</p>
                         </div>
                     </td>
                 </tr>
@@ -254,62 +263,39 @@ $all_fields = $wpdb->get_results($wpdb->prepare(
         typeSelect.on('change', toggleUI);
         toggleUI();
 
-        // SORTABLE LOGIC
-        // $(".pfb-sections-list").sortable({
-        //     handle: ".pfb-section-header",
-        //     placeholder: "ui-state-highlight",
-        //     forcePlaceholderSize: true,
-        //     update: saveOrder
-        // });
 
-        // $(".pfb-fields-table tbody").sortable({
-        //     items: "tr:not(.no-fields)",
-        //     handle: ".pfb-drag-handle",
-        //     placeholder: "ui-state-highlight",
-        //     connectWith: ".pfb-fields-table tbody",
-        //     update: saveOrder
-        // });
-
-        // function saveOrder() {
-        //     let order = [];
-        //     $(".pfb-section-card").each(function() {
-        //         order.push($(this).data('id'));
-        //         $(this).find('tbody tr[data-id]').each(function() {
-        //             order.push($(this).data('id'));
-        //         });
-        //     });
-
-        //     $.post(ajaxurl, {
-        //         action: 'pfb_update_field_order',
-        //         order: order
-        //     }, function(res) {
-        //         if(res.success) console.log("Layout saved");
-        //     });
-        // }
-
-        // sorting handle koro ebong update function trigger koro
+        /**
+         * Initialize Sortable functionality for sections and fields
+         * Persists layout changes via AJAX calls
+         */
         $(".pfb-sections-list").sortable({
             handle: ".pfb-section-header",
             placeholder: "ui-state-highlight",
             forcePlaceholderSize: true,
             update: function(event, ui) {
-                saveOrder(); // Auto-save when section is moved
+                saveOrder(); // Trigger auto-save on section movement
             }
         });
 
+        /**
+         * Handle Drag and Drop for fields across multiple section containers
+         */
         $(".pfb-fields-table tbody").sortable({
             items: "tr:not(.no-fields)",
             handle: ".pfb-drag-handle",
             placeholder: "ui-state-highlight",
             connectWith: ".pfb-fields-table tbody",
             update: function(event, ui) {
-                saveOrder(); // Auto-save when field is moved within or across sections
+                saveOrder(); // Trigger auto-save on field movement
             }
         });
 
+        /**
+         * Capture current DOM structure and sync with Database
+         */
         function saveOrder() {
             let order = [];
-            // Full hierarchy maintain kora hocche
+            // Map current hierarchy of sections and fields
             $(".pfb-section-card").each(function() {
                 order.push($(this).data('id')); 
                 $(this).find('tbody tr[data-id]').each(function() {
@@ -317,7 +303,7 @@ $all_fields = $wpdb->get_results($wpdb->prepare(
                 });
             });
 
-            // AJAX call for auto-saving
+            // Execute AJAX request to update sort_order in Database
             $.ajax({
                 url: ajaxurl,
                 type: 'POST',
@@ -327,12 +313,10 @@ $all_fields = $wpdb->get_results($wpdb->prepare(
                 },
                 success: function(res) {
                     if(res.success) {
-                        // Success Toast dekhaw
+                        // Show success toast notification
                         const toast = document.getElementById("pfb-save-toast");
                         toast.className = "show";
                         setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
-                        
-                        console.log("Layout saved: " + res.data); //
                     }
                 }
             });
@@ -430,15 +414,83 @@ $all_fields = $wpdb->get_results($wpdb->prepare(
     });
     </script>
     <script>
-        // Section Background Media Uploader logic
-        jQuery(document).ready(function($){
-            $('.pfb-section-bg-upload').click(function(e) {
+        /**
+         * Professional Media Uploader for Section Background
+         * Logic: Uses delegated events to ensure it works on dynamically added elements.
+         */
+        jQuery(document).ready(function($) {
+            // FIX: Using delegated event $(document).on to target dynamic buttons
+            $(document).on('click', '.pfb-section-bg-upload', function(e) {
                 e.preventDefault();
-                let frame = wp.media({ title: 'Select Section Background', button: { text: 'Use Image' }, multiple: false });
-                frame.on('select', function() {
-                    let attachment = frame.state().get('selection').first().toJSON();
+                
+                // Initialize the WordPress Media Library frame
+                let pfb_section_frame = wp.media({ 
+                    title: 'Select Section Background', 
+                    button: { text: 'Use Image' }, 
+                    multiple: false 
+                });
+                
+                // Handle image selection
+                pfb_section_frame.on('select', function() {
+                    let attachment = pfb_section_frame.state().get('selection').first().toJSON();
+                    
+                    // Assign image URL to the corresponding input field
                     $('#pfb_section_bg_url').val(attachment.url);
-                }).open();
+                    
+                    // Auto-close the frame after selection for better UX
+                    pfb_section_frame.close(); 
+                });
+
+                // Display the media uploader
+                pfb_section_frame.open();
+            });
+        });
+
+
+        /**
+         * 
+         *  Handle Section Background Removal
+         * 
+         */
+        jQuery(document).ready(function($) {
+            /**
+             * Handle Section Background Media Upload
+             */
+            $(document).on('click', '.pfb-section-bg-upload', function(e) {
+                e.preventDefault();
+                
+                let pfb_section_frame = wp.media({ 
+                    title: 'Select Section Background', 
+                    button: { text: 'Use Image' }, 
+                    multiple: false 
+                });
+                
+                pfb_section_frame.on('select', function() {
+                    let attachment = pfb_section_frame.state().get('selection').first().toJSON();
+                    
+                    // Update input and preview image
+                    $('#pfb_section_bg_url').val(attachment.url);
+                    $('#pfb_section_bg_preview').attr('src', attachment.url).show();
+                    
+                    // Append remove button if not exists
+                    if (!$('#pfb_remove_section_bg').length) {
+                        $('#pfb_section_bg_preview').after('<br><button type="button" class="button button-link-delete" id="pfb_remove_section_bg" style="color:red; text-decoration:none; padding:0; margin-top:5px;">Remove Image</button>');
+                    }
+                    
+                    pfb_section_frame.close(); 
+                });
+
+                pfb_section_frame.open();
+            });
+
+            /**
+             * Handle Section Background Removal
+             */
+            $(document).on('click', '#pfb_remove_section_bg', function(e) {
+                e.preventDefault();
+                $('#pfb_section_bg_url').val('');
+                $('#pfb_section_bg_preview').hide().attr('src', '');
+                $(this).remove();
             });
         });
     </script>

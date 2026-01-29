@@ -285,11 +285,13 @@ function pfb_save_form_settings() {
         $data[$pre . 'header_gap']           = intval($_POST[$pre . 'header_gap'] ?? 15);
         $data[$pre . 'field_spacing']        = intval($_POST[$pre . 'field_spacing'] ?? 20);
         $data[$pre . 'input_bg_color']       = sanitize_hex_color($_POST[$pre . 'input_bg_color'] ?? '#ffffff');
+        $data[$pre . 'image_preview_width'] = intval($_POST[$pre . 'image_preview_width'] ?? 100);
         
         foreach (['heading', 'label', 'text'] as $type) {
             $data[$pre . $type . '_font_size']   = intval($_POST[$pre . $type . '_font_size'] ?? 16);
             $data[$pre . $type . '_font_weight'] = intval($_POST[$pre . $type . '_font_weight'] ?? 400);
             $data[$pre . $type . '_color']       = sanitize_hex_color($_POST[$pre . $type . '_color'] ?? '#333333');
+            $data[$pre . $type . '_align']       = sanitize_text_field($_POST[$pre . $type . '_align'] ?? 'left');
         }
 
         foreach (['submit', 'cancel'] as $btn) {
@@ -297,6 +299,7 @@ function pfb_save_form_settings() {
             $data[$pre . $btn . '_btn_bg']     = sanitize_hex_color($_POST[$pre . $btn . '_btn_bg'] ?? '#2271b1');
             $data[$pre . $btn . '_btn_clr']    = sanitize_hex_color($_POST[$pre . $btn . '_btn_clr'] ?? '#ffffff');
             $data[$pre . $btn . '_btn_radius'] = intval($_POST[$pre . $btn . '_btn_radius'] ?? 6);
+            $data[$pre . $btn . '_btn_align']  = sanitize_text_field($_POST[$pre . $btn . '_btn_align'] ?? 'flex-start');
         }
     }
 

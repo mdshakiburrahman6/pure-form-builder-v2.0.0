@@ -10,7 +10,7 @@ $allowed_roles = !empty($form->allowed_roles) ? array_map('trim', explode(',', $
 $roles = wp_roles()->roles;
 
 /**
- * ইউজার ফ্রেন্ডলি ডিজাইনার ফাংশন (Vertical Layout)
+ * Render Full Designer Settings
  */
 function pfb_render_full_designer($prefix, $form) {
     ?>
@@ -68,9 +68,32 @@ function pfb_render_full_designer($prefix, $form) {
                 <label><strong>Text Color</strong></label>
                 <input type="color" name="<?php echo $prefix.$key; ?>_color" value="<?php echo esc_attr($form->{$prefix.$key.'_color'} ?? '#333333'); ?>">
             </div>
+            <div class="pfb-input-row">
+                <label><strong>Text Alignment</strong></label>
+                <select name="<?php echo $prefix.$key; ?>_align">
+                    <option value="left" <?php selected(($form->{$prefix.$key.'_align'} ?? 'left'), 'left'); ?>>Left</option>
+                    <option value="center" <?php selected(($form->{$prefix.$key.'_align'} ?? 'left'), 'center'); ?>>Center</option>
+                    <option value="right" <?php selected(($form->{$prefix.$key.'_align'} ?? 'left'), 'right'); ?>>Right</option>
+                </select>
+            </div>
         </td>
     </tr>
     <?php endforeach; ?>
+
+    <tr style="background:#f0f0f1;"><th colspan="2"><h3>Media Settings</h3></th></tr>
+    <tr>
+        <th>Image Preview Size</th>
+        <td class="pfb-design-container">
+            <div class="pfb-input-row">
+                <label><strong>Max Width</strong> (0% to 100%)</label>
+                <input type="number" name="<?php echo $prefix; ?>image_preview_width" 
+                    value="<?php echo esc_attr($form->{$prefix.'image_preview_width'} ?? 100); ?>" 
+                    min="5" max="100"> 
+                <span>%</span>
+            </div>
+            <p class="description">This controls how large images appear on the profile view page.</p>
+        </td>
+    </tr>
 
     <tr style="background:#f0f0f1;"><th colspan="2"><h3>Buttons Designer</h3></th></tr>
     <?php foreach(['submit' => 'Submit Button', 'cancel' => 'Cancel Button'] as $b_key => $b_label): ?>
@@ -92,6 +115,14 @@ function pfb_render_full_designer($prefix, $form) {
             <div class="pfb-input-row">
                 <label><strong>Border Radius</strong></label>
                 <input type="number" name="<?php echo $prefix.$b_key; ?>_btn_radius" value="<?php echo esc_attr($form->{$prefix.$b_key.'_btn_radius'} ?? 6); ?>"> <span>px</span>
+            </div>
+            <div class="pfb-input-row">
+                <label><strong>Button Alignment</strong></label>
+                <select name="<?php echo $prefix.$b_key; ?>_btn_align">
+                    <option value="flex-start" <?php selected(($form->{$prefix.$b_key.'_btn_align'} ?? 'flex-start'), 'flex-start'); ?>>Left</option>
+                    <option value="center" <?php selected(($form->{$prefix.$b_key.'_btn_align'} ?? 'flex-start'), 'center'); ?>>Center</option>
+                    <option value="flex-end" <?php selected(($form->{$prefix.$b_key.'_btn_align'} ?? 'flex-start'), 'flex-end'); ?>>Right</option>
+                </select>
             </div>
         </td>
     </tr>
@@ -147,6 +178,15 @@ function pfb_render_full_designer($prefix, $form) {
                 <tr>
                     <th>Profile Background</th>
                     <td>
+                        <div id="pfb_bg_preview_container" style="margin-bottom:10px;">
+                            <?php if (!empty($form->form_bg_image)): ?>
+                                <img src="<?php echo esc_url($form->form_bg_image); ?>" id="pfb_bg_preview" style="max-width:200px; border:1px solid #ccc; padding:5px; border-radius:4px; display:block;">
+                                <button type="button" class="button button-link-delete" id="pfb_remove_bg" style="color:red; text-decoration:none; padding:0; margin-top:5px;">Remove Image</button>
+                            <?php else: ?>
+                                <img id="pfb_bg_preview" style="max-width:200px; border:1px solid #ccc; padding:5px; border-radius:4px; display:none;">
+                            <?php endif; ?>
+                        </div>
+
                         <input type="text" name="form_bg_image" id="pfb_bg_url" value="<?php echo esc_attr($form->form_bg_image); ?>" class="regular-text">
                         <button type="button" class="button pfb-media-upload">Upload Image</button>
                     </td>
@@ -222,6 +262,60 @@ document.addEventListener('DOMContentLoaded', function () {
             let attachment = frame.state().get('selection').first().toJSON();
             jQuery('#pfb_bg_url').val(attachment.url);
         }).open();
+    });
+});
+
+
+/**
+ * Handle Media Upload and Image Preview logic for Form Settings
+ */
+jQuery(document).ready(function($) {
+    
+    // Trigger WordPress Media Uploader
+    $('.pfb-media-upload').on('click', function(e) {
+        e.preventDefault();
+        
+        // Initialize the media frame
+        let frame = wp.media({ 
+            title: 'Select Background Image', 
+            button: { text: 'Use Image' }, 
+            multiple: false 
+        });
+
+        // Event handler for image selection
+        frame.on('select', function() {
+            // Get attachment details from the frame
+            let attachment = frame.state().get('selection').first().toJSON();
+            
+            // Update hidden input and image preview src
+            $('#pfb_bg_url').val(attachment.url);
+            $('#pfb_bg_preview').attr('src', attachment.url).show();
+            
+            // Append 'Remove Image' button if it doesn't already exist
+            if (!$('#pfb_remove_bg').length) {
+                $('#pfb_bg_preview').after('<br><button type="button" class="button button-link-delete" id="pfb_remove_bg" style="color:red; text-decoration:none; padding:0; margin-top:5px;">Remove Image</button>');
+            }
+
+            // Automatically close the media library after selection
+            frame.close(); 
+        });
+
+        frame.open();
+    });
+
+    /**
+     * Handle Image Removal
+     * Resets the input value and hides the preview element
+     */
+    $(document).on('click', '#pfb_remove_bg', function(e) {
+        e.preventDefault();
+        
+        // Clear the URL input and hide the preview container
+        $('#pfb_bg_url').val('');
+        $('#pfb_bg_preview').hide().attr('src', '');
+        
+        // Remove the button itself from the DOM
+        $(this).remove();
     });
 });
 </script>
