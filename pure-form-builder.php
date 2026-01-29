@@ -4,7 +4,7 @@ Plugin Name: Pure Custom Form Builder
 Author: Md Shakibur Rahman
 Author URI: https://github.com/mdshakiburrahman6/
 Description: A simple drag-and-drop form builder plugin for WordPress to create custom forms with ease.
-Version: 2.0.0
+Version: 2.0.1
 */
 
 if (!defined('ABSPATH')) exit;
