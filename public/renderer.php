@@ -186,24 +186,33 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
                     case 'image': case 'file':
                         ?>
                         <div class="pfb-file-wrap">
-                            <input type="file" <?php echo ($f->type === 'image') ? 'accept="image/*"' : ''; ?> name="<?php echo esc_attr($f->name); ?>" onchange="<?php echo ($f->type === 'image') ? 'pfb_preview_image(this)' : ''; ?>">
-                            <div class="pfb-preview-container">
+                            <input type="file" 
+                                <?php echo ($f->type === 'image') ? 'accept="image/*"' : ''; ?> 
+                                name="<?php echo esc_attr($f->name); ?>" 
+                                onchange="pfb_preview_single_image(this)"> 
+                            
+                            <div class="pfb-preview-container" style="margin-top:10px;">
                                 <?php if ($is_edit && !empty($value)): ?>
-                                    <div class="existing" style="margin-top:10px;">
-                                        <?php if($f->type === 'image'): ?>
-                                            <img src="<?php echo esc_url($value); ?>" style="max-width:150px; border-radius:5px; border:1px solid #ddd;" />
-                                        <?php else: ?>
-                                            <a href="<?php echo esc_url($value); ?>" target="_blank">📄 View Current File</a>
+                                    <div class="existing-file-preview" style="border:1px solid #ddd; padding:10px; border-radius:5px; display:inline-block;">
+                                        <?php if($f->type === 'image' || preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $value)): ?>
+                                            <img src="<?php echo esc_url($value); ?>" style="max-width:150px; display:block; margin-bottom:5px;" />
                                         <?php endif; ?>
-                                        <label style="color:red; font-size:12px; display:block; margin-top:5px;">
-                                            <input type="checkbox" name="pfb_remove_file[]" value="<?php echo esc_attr($f->name); ?>"> Remove Current
-                                        </label>
+                                        
+                                        <a href="javascript:void(0)" class="pfb-instant-remove" 
+                                        data-field="<?php echo esc_attr($f->name); ?>" 
+                                        data-entry="<?php echo esc_attr($entry_id); ?>"
+                                        style="color:red; font-size:13px; text-decoration:none; display: block; margin-top: 5px; font-weight: bold;">
+                                        Remove Image
+                                        </a>
                                     </div>
                                 <?php endif; ?>
+                                
+                                <div class="pfb-js-live-preview"></div>
                             </div>
                         </div>
-                        <?php break;
+                    <?php break;
 
+                    
                     case 'gallery':
                         $gallery_images = !empty($value) ? json_decode($value, true) : [];
                         ?>
@@ -240,21 +249,6 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
 </div>
 
 <script>
-    function pfb_preview_image(input) {
-        const container = input.closest('.pfb-file-wrap').querySelector('.pfb-preview-container');
-        container.innerHTML = '';
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.style.maxWidth = '150px'; img.style.marginTop = '10px'; img.style.borderRadius = '5px';
-                container.appendChild(img);
-            }
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
     function pfb_preview_gallery(input) {
         const container = input.closest('.pfb-gallery-wrap').querySelector('.pfb-gallery-preview-container');
         container.innerHTML = '';
@@ -272,4 +266,134 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
             });
         }
     }
+</script>
+<script>
+jQuery(document).ready(function($) {
+    // Live Preview trigger logic
+    $(document).on('change', '.pfb-file-input', function() {
+        const input = this;
+        const wrap = $(this).closest('.pfb-file-wrap');
+        const container = wrap.find('.pfb-live-preview');
+        const isImage = $(this).data('type') === 'image';
+
+        container.empty(); // Agur temporary preview muche fela
+
+        if (input.files && input.files[0] && isImage) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = $('<img>').attr('src', e.target.result).css({
+                    'max-width': '150px',
+                    'margin-top': '10px',
+                    'border-radius': '5px',
+                    'border': '2px dashed #2271b1',
+                    'display': 'block'
+                });
+                container.append(img);
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    });
+
+    // Instant Remove AJAX Logic
+    $(document).on('click', '.pfb-instant-remove', function(e) {
+        e.preventDefault();
+        const btn = $(this);
+        if (!confirm('Are you sure you want to remove this image?')) return;
+
+        $.ajax({
+            url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            type: 'POST',
+            data: {
+                action: 'pfb_remove_frontend_image',
+                entry_id: btn.data('entry'),
+                field_name: btn.data('field')
+            },
+            success: function(response) {
+                if (response.success) {
+                    btn.closest('.existing-file-preview').fadeOut(300, function() { $(this).remove(); });
+                }
+            }
+        });
+    });
+});
+
+/**
+ * Native JS Image Preview with Cancel/Remove option for unsaved images
+ * Eita Submit ebong Edit sob page-e naya image select korle preview ebong remove option dekhabe
+ */
+function pfb_preview_single_image(input) {
+    const wrap = input.closest('.pfb-file-wrap');
+    const container = wrap.querySelector('.pfb-js-live-preview');
+    
+    // Purono temporary preview clear kora
+    container.innerHTML = ''; 
+
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Preview Image create
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.maxWidth = '150px';
+            img.style.marginTop = '10px';
+            img.style.borderRadius = '5px';
+            img.style.border = '2px dashed #2271b1';
+            img.style.display = 'block';
+
+            // Unsaved Image Remove Button (Submit page er jonno)
+            const removeBtn = document.createElement('a');
+            removeBtn.href = 'javascript:void(0)';
+            removeBtn.innerHTML = 'Remove Selected';
+            removeBtn.style.color = 'red';
+            removeBtn.style.fontSize = '12px';
+            removeBtn.style.textDecoration = 'none';
+            removeBtn.style.display = 'block';
+            removeBtn.style.marginTop = '5px';
+            removeBtn.style.fontWeight = 'bold';
+
+            // Button click korle input field clear hobe ebong preview chole jabe
+            removeBtn.onclick = function() {
+                input.value = ''; // Input file reset
+                container.innerHTML = ''; // Preview remove
+            };
+
+            container.appendChild(img);
+            container.appendChild(removeBtn);
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+/**
+ * Instant AJAX Remove Logic (Shudhu matro Edit page-e DB theke delete korar jonno)
+ */
+jQuery(document).ready(function($) {
+    $(document).on('click', '.pfb-instant-remove', function(e) {
+        e.preventDefault();
+        const btn = $(this);
+        const fieldName = btn.data('field');
+        const entryId = btn.data('entry');
+
+        if (!confirm('Are you sure you want to remove this image from database?')) return;
+
+        $.ajax({
+            url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            type: 'POST',
+            data: {
+                action: 'pfb_remove_frontend_image',
+                entry_id: entryId,
+                field_name: fieldName
+            },
+            success: function(response) {
+                if (response.success) {
+                    btn.closest('.existing-file-preview').fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                } else {
+                    alert('Error: ' + (response.data || 'Unknown error'));
+                }
+            }
+        });
+    });
+});
 </script>

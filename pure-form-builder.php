@@ -89,3 +89,5 @@ add_action('admin_enqueue_scripts', function($hook) {
         wp_enqueue_media();
     }
 });
+// AJAX for instant image removal from frontend
+add_action('wp_ajax_pfb_remove_frontend_image', 'pfb_handle_frontend_image_removal');

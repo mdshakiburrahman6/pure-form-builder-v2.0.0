@@ -308,3 +308,19 @@ function pfb_save_form_settings() {
     wp_redirect(admin_url("admin.php?page=pfb-form-settings&form_id={$form_id}&updated=1&tab=" . urlencode($last_tab)));
     exit;
 }
+
+// AJAX Handler for Frontend Image Removal
+add_action('wp_ajax_pfb_remove_frontend_image', 'pfb_handle_frontend_image_removal');
+
+function pfb_handle_frontend_image_removal() {
+    global $wpdb;
+    $entry_id = intval($_POST['entry_id']);
+    $field_name = sanitize_text_field($_POST['field_name']);
+
+    $wpdb->update(
+        "{$wpdb->prefix}pfb_entry_meta",
+        ['field_value' => ''],
+        ['entry_id' => $entry_id, 'field_name' => $field_name]
+    );
+    wp_send_json_success();
+}
