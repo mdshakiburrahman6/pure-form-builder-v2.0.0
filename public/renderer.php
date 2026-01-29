@@ -175,7 +175,11 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
                     case 'radio':
                         $options = json_decode($f->options, true) ?: [];
                         foreach ($options as $opt) {
-                            echo '<label style="display:block;"><input type="radio" name="'.esc_attr($f->name).'" value="'.esc_attr($opt).'" '.checked($value === $opt, true, false).'> '.esc_html($opt).'</label>';
+                            // Wrapped in a styled label for better UI
+                            echo '<label class="pfb-radio-label">';
+                            echo '<input type="radio" name="'.esc_attr($f->name).'" value="'.esc_attr($opt).'" '.checked($value === $opt, true, false).'>';
+                            echo '<span>' . esc_html($opt) . '</span>';
+                            echo '</label>';
                         }
                         break;
 

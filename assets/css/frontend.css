@@ -206,6 +206,37 @@
     border-top: 1px solid #eee;
 }
 
+/* Radio Button UI Optimization */
+.pfb-field input[type="radio"] {
+    width: auto !important;
+    margin-right: 10px !important;
+    cursor: pointer;
+    accent-color: #2271b1; /* WordPress primary blue for consistent branding */
+}
+
+.pfb-field label.pfb-radio-label {
+    display: flex;
+    align-items: center;
+    /* background: #f9f9f9; */
+    padding: 3px 15px;
+    /* border: 1px solid #ddd; */
+    border-radius: 6px;
+    margin-bottom: 8px !important;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.pfb-field label.pfb-radio-label:hover {
+    /* background: #f0f7ff; */
+    /* border-color: #2271b1; */
+}
+
+/* Style for selected state via CSS selector */
+.pfb-field input[type="radio"]:checked + span {
+    color: #2271b1;
+    font-weight: 600;
+}
 
 /**
  * Layout Grid System
