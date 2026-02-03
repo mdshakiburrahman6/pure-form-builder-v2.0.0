@@ -329,3 +329,63 @@ function pfb_handle_frontend_image_removal() {
     );
     wp_send_json_success();
 }
+
+
+
+
+
+add_action('wp_footer', function () {
+?>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    if (typeof Swal === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+
+    // SUCCESS
+    if (params.has('pfb_success')) {
+        const mode = params.get('pfb_mode');
+
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: mode === 'edit'
+                ? 'Profile updated successfully'
+                : 'Profile created successfully',
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true
+        });
+
+        const url = new URL(window.location);
+        url.searchParams.delete('pfb_success');
+        url.searchParams.delete('pfb_mode');
+        window.history.replaceState({}, document.title, url.pathname);
+    }
+
+    // ERRORS
+    if (params.has('pfb_errors')) {
+        try {
+            const errors = JSON.parse(decodeURIComponent(params.get('pfb_errors')));
+            let html = '<ul>';
+            Object.values(errors).forEach(e => html += `<li>${e} is required</li>`);
+            html += '</ul>';
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: 'Please fix the following fields',
+                html,
+                showConfirmButton: false,
+                timer: 6000
+            });
+        } catch(e){}
+    }
+
+});
+</script>
+<?php
+});

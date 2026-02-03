@@ -165,8 +165,19 @@ function pfb_handle_form_submit() {
     // 5. SUCCESS REDIRECT & CLEANUP
     $current_url = wp_get_referer();
     $view_profile_url = remove_query_arg(['edit', 'entry_id', 'pfb_errors'], $current_url);
-    wp_safe_redirect(add_query_arg('pfb_success', 1, $view_profile_url));
+    // wp_safe_redirect(add_query_arg('pfb_success', 1, $view_profile_url));
     // $redirect_url = remove_query_arg(['edit', 'entry_id', 'pfb_errors'], wp_get_referer());
     // wp_safe_redirect(add_query_arg('pfb_success', 1, $redirect_url));
+    wp_safe_redirect(
+        add_query_arg(
+            [
+                'pfb_success' => 1,
+                'pfb_mode' => $entry_id ? 'edit' : 'submit'
+            ],
+            $view_profile_url
+        )
+    );
     exit;
 }
+
+

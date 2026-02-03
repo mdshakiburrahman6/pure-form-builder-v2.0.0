@@ -181,10 +181,11 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
 
                     case 'radio':
                         $options = json_decode($f->options, true) ?: [];
+                        $is_required = !empty($f->required);
                         foreach ($options as $opt) {
                             // Wrapped in a styled label for better UI
                             echo '<label class="pfb-radio-label">';
-                            echo '<input type="radio" name="'.esc_attr($f->name).'" value="'.esc_attr($opt).'" '.checked($value === $opt, true, false).'>';
+                            echo '<input type="radio" name="'.esc_attr($f->name).'" value="'.esc_attr($opt).'" '.checked($value === $opt, true, false).' '.($is_required && $index === 0 ? 'required' : '').' >';
                             echo '<span>' . esc_html($opt) . '</span>';
                             echo '</label>';
                         }
@@ -195,8 +196,10 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
                         <div class="pfb-file-wrap">
                             <input type="file" 
                                 <?php echo ($f->type === 'image') ? 'accept="image/*"' : ''; ?> 
-                                name="<?php echo esc_attr($f->name); ?>" 
-                                onchange="pfb_preview_single_image(this)"> 
+                                name="<?php echo esc_attr($f->name); ?>"  
+                                <?php echo !empty($f->required) ? 'required' : ''; ?>
+                                onchange="pfb_preview_single_image(this)"
+                                > 
                             
                             <div class="pfb-preview-container" style="margin-top:10px;">
                                 <?php if ($is_edit && !empty($value)): ?>
@@ -224,7 +227,15 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
                         $gallery_images = !empty($value) ? json_decode($value, true) : [];
                         ?>
                         <div class="pfb-gallery-wrap">
-                            <input type="file" accept="image/*" name="<?php echo esc_attr($f->name); ?>[]" multiple onchange="pfb_preview_gallery(this)">
+                            <input 
+                                type="file" 
+                                accept="image/*" 
+                                name="<?php echo esc_attr($f->name); ?>[]" 
+                                multiple 
+                                onchange="pfb_preview_gallery(this)"
+                                <?php echo !empty($f->required) ? 'required' : ''; ?>
+                            >
+
                             <div class="pfb-gallery-preview-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
                                 <?php if ($is_edit && !empty($gallery_images)): 
                                     foreach($gallery_images as $img_url): ?>
@@ -411,4 +422,15 @@ jQuery(document).ready(function($) {
     });
 });
 
+
+// jQuery(document).ready(function($) {
+//     // Page load hobar por jodi URL e pfb_errors thake, tobe sheta clean koro
+//     if (window.location.search.indexOf('pfb_errors=') > -1) {
+//         const newURL = window.location.protocol + "//" + window.location.host + window.location.pathname;
+//         window.history.replaceState({path: newURL}, '', newURL);
+//     }
+// });
+
 </script>
+
+

@@ -158,3 +158,42 @@ $(document).on('change', 'input[name="pfb_remove_file[]"]', function() {
     }
 });
 
+
+
+// Remove error styles and messages on input
+document.addEventListener("DOMContentLoaded", function () {
+
+    document.querySelectorAll('input, textarea, select').forEach(function (field) {
+
+        field.addEventListener('input', function () {
+
+            // Remove error styles
+            field.classList.remove('error');
+            field.classList.remove('invalid');
+            field.style.borderColor = '';
+
+            // Remove error message if exists
+            const errorMsg = field.parentElement.querySelector('.pfb-error, .error-message');
+            if (errorMsg) {
+                errorMsg.remove();
+            }
+
+        });
+
+    });
+
+});
+
+document.addEventListener("input", function (e) {
+    if (e.target.closest('.pfb-field')) {
+        const fieldWrap = e.target.closest('.pfb-field');
+
+        fieldWrap.classList.remove('pfb-field-error');
+
+        const error = fieldWrap.querySelector('.pfb-error');
+        if (error) error.remove();
+    }
+});
+
+
+
