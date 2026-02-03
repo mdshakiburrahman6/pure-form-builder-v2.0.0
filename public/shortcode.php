@@ -309,10 +309,18 @@ if (!function_exists('pfb_render_entry_view')) {
                                                     // Render Single Image component
                                                     echo '<img src="'.esc_url($val).'" class="pfb-view-image">';
                                                     echo '<div class="pfb-download-wrapper"><a href="'.esc_url($val).'" download class="pfb-btn-download-profile">📥 Download Image</a></div>';
-                                                } else {
-                                                    // Fallback for standard text data
-                                                    echo nl2br(esc_html($val));
-                                                }
+                                                } elseif ($f->type === 'url' && filter_var($val, FILTER_VALIDATE_URL)) {
+                                                        echo '<a href="' . esc_url($val) . '" 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer"
+                                                                class="pfb-view-url">
+                                                                ' . esc_html($val) . '
+                                                            </a>';
+                                                    } 
+                                                    else {
+                                                        echo nl2br(esc_html($val));
+                                                    }
+
                                                 ?>
                                             </div>
                                         </div>
