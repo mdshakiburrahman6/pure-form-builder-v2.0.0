@@ -205,7 +205,7 @@ if (!function_exists('pfb_render_entry_view')) {
                 background: #f1f1f1;
                 padding: 4px 12px !important;
                 border-radius: 4px;
-                text-decoration: none;
+                text-decoration: none !important; 
                 font-size: 14px !important;
                 color: #2271b1;
                 border: 1px solid #ccc;

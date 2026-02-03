@@ -211,6 +211,26 @@ $all_fields = $wpdb->get_results($wpdb->prepare(
                 <tr><th>System Name (ID)</th><td><input type="text" name="field_name" class="regular-text" value="<?php echo esc_attr($edit_field->name ?? ''); ?>" required <?php echo $edit_field ? 'readonly' : ''; ?>></td></tr>
 
                 <tr class="pfb-standard-field">
+                    <th>Placeholder</th>
+                    <td>
+                        <input type="text" name="field_placeholder" class="regular-text" value="<?php echo esc_attr($edit_field->placeholder ?? ''); ?>" placeholder="Enter placeholder text...">
+                    </td>
+                </tr>
+
+                <tr class="pfb-standard-field">
+                    <th>Description</th>
+                    <td>
+                        <textarea name="field_description" class="large-text" rows="2" placeholder="Enter a small description for this field..."><?php echo esc_textarea($edit_field->description ?? ''); ?></textarea>
+                        <p class="description">This text will appear below the input field.</p>
+                    </td>
+                </tr>
+
+                <!-- <tr class="pfb-standard-field">
+                    <th>Required</th>
+                    <td><label><input type="checkbox" name="field_required" <?php checked(!empty($edit_field->required)); ?>> Field is mandatory</label></td>
+                </tr> -->
+
+                <tr class="pfb-standard-field">
                     <th>Required</th>
                     <td><label><input type="checkbox" name="field_required" <?php checked(!empty($edit_field->required)); ?>> Field is mandatory</label></td>
                 </tr>

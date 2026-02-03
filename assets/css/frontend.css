@@ -2,7 +2,7 @@
    FORM FRONTEND STYLING
    ========================================== */
 .pfb-form {
-    max-width: 700px;
+    max-width: 100%;
     padding: 25px;
     border: 1px solid #e0e0e0;
     background: #ffffff;

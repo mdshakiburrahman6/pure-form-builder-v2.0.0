@@ -157,3 +157,4 @@ $(document).on('change', 'input[name="pfb_remove_file[]"]', function() {
         $(this).closest('.existing').css('opacity', '1');
     }
 });
+

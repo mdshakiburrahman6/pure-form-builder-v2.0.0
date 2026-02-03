@@ -148,20 +148,27 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
                 continue;
             }
 
-            $has_error = isset($pfb_errors[$f->name]);
+            // $has_error = isset($pfb_errors[$f->name]);
+            $has_error = (isset($pfb_errors[$f->name]) && !empty($f->required));
             $value = ($is_edit && isset($existing_meta[$f->name])) ? $existing_meta[$f->name] : '';
             ?>
             <div class="pfb-field <?php echo $has_error ? 'pfb-has-error' : ''; ?>" <?php if (!empty($f->rules)) echo 'data-rules="' . esc_attr($f->rules) . '"'; ?>>
-                <label><?php echo esc_html($f->label); ?></label>
+                <!-- <label><?php // echo esc_html($f->label); ?></label> -->
+                <label>
+                    <?php echo esc_html($f->label); ?>
+                    <?php if (!empty($f->required)): ?>
+                        <span class="pfb-required-star" style="color: red; margin-left: 3px;">*</span>
+                    <?php endif; ?>
+                </label>
 
                 <?php
                 switch ($f->type) {
                     case 'text': case 'email': case 'number': case 'url': case 'tel':
-                        echo '<input type="'.esc_attr($f->type).'" name="'.esc_attr($f->name).'" value="'.esc_attr($value).'" '.(!empty($f->required) ? 'required' : '').' class="'.($has_error ? 'pfb-error-input' : '').'">';
+                        echo '<input type="'.esc_attr($f->type).'" name="'.esc_attr($f->name).'" value="'.esc_attr($value).'" '.(!empty($f->required) ? 'required' : '').' class="'.($has_error ? 'pfb-error-input' : '').'" placeholder="'.esc_attr($f->placeholder ?? '').'">';
                         break;
 
                     case 'textarea':
-                        echo '<textarea name="'.esc_attr($f->name).'" '.(!empty($f->required) ? 'required' : '').'>'.esc_textarea($value).'</textarea>';
+                        echo '<textarea name="'.esc_attr($f->name).'" '.(!empty($f->required) ? 'required' : '').' placeholder="'.esc_attr($f->placeholder ?? '').'">'.esc_textarea($value).'</textarea>';
                         break;
 
                     case 'select':
@@ -229,6 +236,13 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
                         <?php break;
                 }
                 ?>
+                
+                <!-- Display field Description if available -->
+                <?php if (!empty($f->description)): ?>
+                    <p class="pfb-field-description" style="font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 0px; font-style: italic;">
+                        <?php echo esc_html($f->description); ?>
+                    </p>
+                <?php endif; ?>
             </div>
         <?php endforeach; 
         if ($opened_fieldset) echo '</fieldset>';
@@ -396,4 +410,5 @@ jQuery(document).ready(function($) {
         });
     });
 });
+
 </script>

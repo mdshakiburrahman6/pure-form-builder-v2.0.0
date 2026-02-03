@@ -55,7 +55,8 @@ function pfb_handle_add_field() {
     $form_id     = intval($_POST['form_id']);
     $fieldset_id = isset($_POST['fieldset_id']) ? intval($_POST['fieldset_id']) : 0;
     $field_type  = sanitize_text_field($_POST['field_type']);
-    $required    = isset($_POST['field_required']) ? 1 : 0;
+    // $required    = isset($_POST['field_required']) ? 1 : 0;
+    $required = isset($_POST['field_required']) ? 1 : 0;
 
     $rules = null;
     if (!empty($_POST['rules']) && is_array($_POST['rules'])) {
@@ -90,6 +91,8 @@ function pfb_handle_add_field() {
         'fieldset_id'      => $fieldset_id,
         'type'             => $field_type,
         'label'            => sanitize_text_field($_POST['field_label']),
+        'placeholder' => sanitize_text_field($_POST['field_placeholder']), 
+        'description' => sanitize_textarea_field($_POST['field_description']), 
         'name'             => $field_name,
         'options'          => $options,
         'required'         => $required,

@@ -116,6 +116,9 @@ function pfb_activate() {
         submit_submit_btn_weight int(11) DEFAULT 600,
         submit_cancel_btn_size int(11) DEFAULT 16,
         submit_cancel_btn_weight int(11) DEFAULT 400,
+        border_radius int(11) DEFAULT 8,
+        text_align varchar(20) DEFAULT 'left',
+        form_bg_image text NULL,
         created_at datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY  (id)
     ) $charset;";
@@ -129,6 +132,8 @@ function pfb_activate() {
         type varchar(50) NOT NULL,
         label varchar(255) NOT NULL,
         name varchar(255) NOT NULL,
+        placeholder varchar(255) DEFAULT '',
+        description text DEFAULT NULL,
         options longtext NULL,
         rules longtext NULL,
         required tinyint(1) DEFAULT 0,
