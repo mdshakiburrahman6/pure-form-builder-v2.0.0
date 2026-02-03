@@ -168,7 +168,7 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
                         break;
 
                     case 'textarea':
-                        echo '<textarea name="'.esc_attr($f->name).'" '.(!empty($f->required) ? 'required' : '').' placeholder="'.esc_attr($f->placeholder ?? '').'">'.esc_textarea($value).'</textarea>';
+                        echo '<textarea name="'.esc_attr($f->name).'" rows="6" '.(!empty($f->required) ? 'required' : '').' placeholder="'.esc_attr($f->placeholder ?? '').'">'.esc_textarea($value).'</textarea>';
                         break;
 
                     case 'select':

@@ -238,7 +238,7 @@ $all_fields = $wpdb->get_results($wpdb->prepare(
                 <tr class="pfb-field-options-row">
                     <th>Options</th>
                     <td>
-                        <textarea name="field_options" rows="3" class="large-text" placeholder="Option 1, Option 2, Option 3"><?php if (!empty($edit_field->options)) echo esc_textarea(implode(', ', json_decode($edit_field->options, true))); ?></textarea>
+                        <textarea name="field_options" rows="4" class="large-text" placeholder="Option 1, Option 2, Option 3"><?php if (!empty($edit_field->options)) echo esc_textarea(implode(', ', json_decode($edit_field->options, true))); ?></textarea>
                         <p class="description">Comma separated list of choices.</p>
                     </td>
                 </tr>
