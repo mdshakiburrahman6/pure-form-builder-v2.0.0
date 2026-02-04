@@ -47,6 +47,23 @@ $all_fields = $wpdb->get_results($wpdb->prepare(
         font-size: 14px;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
+    .pfb-pro-wrap {
+        position: relative;
+        opacity: 0.6;
+    }
+
+    .pfb-pro-badge {
+        display: inline-block;
+        background: #d63638;
+        color: #fff;
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        margin-left: 6px;
+        vertical-align: middle;
+    }
+
+
     #pfb-save-toast.show {
         visibility: visible;
         -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
@@ -187,8 +204,16 @@ $all_fields = $wpdb->get_results($wpdb->prepare(
                         </select>
                     </td>
                 </tr>
-                <tr class="pfb-fieldset-only">
-                    <th>Section Background</th>
+                <?php
+                     $pro_active = function_exists('la_is_license_active') && la_is_license_active();
+                ?>
+                <tr class="pfb-fieldset-only <?php echo !$pro_active ? 'pfb-pro-locked' : ''; ?>">
+                    <th>
+                        Section Background
+                        <?php if (!$pro_active): ?>
+                            <span class="pfb-pro-badge">PRO</span>
+                        <?php endif; ?>
+                    </th>
                     <td>
                         <div id="pfb_section_bg_preview_container" style="margin-bottom:10px;">
                             <?php if (!empty($edit_field->section_bg_image)): ?>
@@ -199,11 +224,17 @@ $all_fields = $wpdb->get_results($wpdb->prepare(
                             <?php endif; ?>
                         </div>
 
-                        <input type="text" name="section_bg_image" id="pfb_section_bg_url" value="<?php echo esc_attr($edit_field->section_bg_image ?? ''); ?>" class="regular-text">
-                        <button type="button" class="button pfb-section-bg-upload">Select Image</button>
+                        <input type="text" name="section_bg_image" id="pfb_section_bg_url" value="<?php echo esc_attr($edit_field->section_bg_image ?? ''); ?>" class="regular-text"  <?php disabled(!$pro_active); ?>>
+                        <!-- <button type="button" class="button pfb-section-bg-upload">Select Image</button> -->
+                        <?php if ($pro_active): ?>
+                            <button type="button" class="button pfb-section-bg-upload">Select Image</button>
+                        <?php else: ?>
+                            <button type="button" class="button disabled">🔒 PRO Feature</button>
+                        <?php endif; ?>
+
                         
                         <div style="margin-top:10px;">
-                            Opacity: <input type="number" name="section_bg_opacity" step="0.1" min="0" max="1" value="<?php echo esc_attr($edit_field->section_bg_opacity ?? 1.0); ?>" class="small-text">
+                            Opacity: <input type="number" name="section_bg_opacity" step="0.1" min="0" max="1" value="<?php echo esc_attr($edit_field->section_bg_opacity ?? 1.0); ?>" class="small-text"  <?php disabled(!$pro_active); ?>>
                         </div>
                     </td>
                 </tr>

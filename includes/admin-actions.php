@@ -49,6 +49,8 @@ function pfb_handle_add_field() {
     if (!current_user_can('manage_options')) wp_die('Unauthorized');
     check_admin_referer('pfb_add_field_action', 'pfb_field_nonce');
 
+    $pro_allowed = function_exists('la_is_license_active') && la_is_license_active();
+
     global $wpdb;
     $field_table = $wpdb->prefix . 'pfb_fields';
     $field_id    = isset($_POST['field_id']) ? intval($_POST['field_id']) : 0;
@@ -101,8 +103,8 @@ function pfb_handle_add_field() {
         'fieldset_display' => sanitize_text_field($_POST['fieldset_display'] ?? 'show_always'),
         'file_types'       => sanitize_text_field($_POST['file_types'] ?? ''),
         'max_size'         => floatval($_POST['max_size'] ?? 0),
-        'section_bg_image'   => esc_url_raw($_POST['section_bg_image'] ?? ''),
-        'section_bg_opacity' => floatval($_POST['section_bg_opacity'] ?? 1.0),
+        'section_bg_image'   => $pro_allowed ? esc_url_raw($_POST['section_bg_image'] ?? '') : '',
+        'section_bg_opacity' => $pro_allowed ? floatval($_POST['section_bg_opacity'] ?? 1.0) : 1.0,
     ];
 
     if ($field_id) {
@@ -271,6 +273,10 @@ function pfb_save_form_settings() {
     if (!current_user_can('manage_options')) wp_die('Permission denied');
     check_admin_referer('pfb_save_form_settings', 'pfb_settings_nonce');
 
+    // 🔒 PRO feature permission
+    $pro_allowed = function_exists('la_is_license_active') && la_is_license_active();
+
+
     global $wpdb;
     $form_id = intval($_POST['form_id']);
     
@@ -280,9 +286,21 @@ function pfb_save_form_settings() {
         'form_bg_image'   => esc_url_raw($_POST['form_bg_image'] ?? ''),
     ];
 
-    $tabs = ['view_', 'edit_', 'submit_']; /* */
+    $pro_tabs  = ['view_', 'edit_', 'submit_']; /* */
 
-    foreach ($tabs as $pre) {
+    foreach ($pro_tabs  as $pre) {
+
+        if (! $pro_allowed) {
+            unset(
+                $_POST[$pre . 'column_layout'],
+                $_POST[$pre . 'form_padding'],
+                $_POST[$pre . 'header_gap'],
+                $_POST[$pre . 'field_spacing']
+            );
+            continue;
+        }
+
+
         $data[$pre . 'column_layout']        = sanitize_text_field($_POST[$pre . 'column_layout'] ?? '1-col');
         $data[$pre . 'form_padding']         = intval($_POST[$pre . 'form_padding'] ?? 25);
         $data[$pre . 'header_gap']           = intval($_POST[$pre . 'header_gap'] ?? 15);
@@ -310,6 +328,12 @@ function pfb_save_form_settings() {
 
     $wpdb->update("{$wpdb->prefix}pfb_forms", $data, ['id' => $form_id]);
     $last_tab = isset($_POST['last_tab']) ? sanitize_text_field($_POST['last_tab']) : '#pfb-access-tab';
+    if (! $pro_allowed) {
+        wp_redirect(admin_url(
+            "admin.php?page=pfb-form-settings&form_id={$form_id}&updated=1&pro_locked=1"
+        ));
+        exit;
+    }
     wp_redirect(admin_url("admin.php?page=pfb-form-settings&form_id={$form_id}&updated=1&tab=" . urlencode($last_tab)));
     exit;
 }
