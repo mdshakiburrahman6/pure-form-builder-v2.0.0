@@ -2,6 +2,12 @@
 if (!defined('ABSPATH')) exit;
 global $wpdb;
 
+// License status (DO NOT REMOVE)
+$is_license_active = function_exists('la_is_license_active')
+    ? la_is_license_active()
+    : false;
+
+
 $form_id = isset($_GET['form_id']) ? intval($_GET['form_id']) : 0;
 $form = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pfb_forms WHERE id = %d", $form_id));
 if (!$form) { echo '<div class="notice notice-error"><p>Invalid form.</p></div>'; return; }
@@ -150,9 +156,13 @@ function pfb_render_full_designer($prefix, $form) {
 
     <h2 class="nav-tab-wrapper" style="margin-bottom: 20px;">
         <a href="#pfb-access-tab" class="nav-tab">Access Control</a>
-        <a href="#pfb-view-tab" class="nav-tab">1. View Profile</a>
+        <!-- <a href="#pfb-view-tab" class="nav-tab">1. View Profile</a>
         <a href="#pfb-edit-tab" class="nav-tab">2. Edit Profile</a>
-        <a href="#pfb-submit-tab" class="nav-tab">3. Submit Form</a>
+        <a href="#pfb-submit-tab" class="nav-tab">3. Submit Form</a> -->
+        <a href="#pfb-view-tab" class="nav-tab pfb-pro-tab">1. View Profile</a>
+        <a href="#pfb-edit-tab" class="nav-tab pfb-pro-tab">2. Edit Profile</a>
+        <a href="#pfb-submit-tab" class="nav-tab pfb-pro-tab">3. Submit Form</a>
+
     </h2>
 
     <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
@@ -184,6 +194,35 @@ function pfb_render_full_designer($prefix, $form) {
         </div>
 
         <div id="pfb-view-tab" class="pfb-tab-content" style="display:none;">
+            <?php if ( ! $is_license_active ) : ?>
+                <div class="notice notice-error">
+                    <p>🔒 Premium Feature — Activate license to access this tab.</p>
+                </div>
+            <?php else : ?>
+                <table class="form-table">
+                    <tr>
+                        <th>Profile Background</th>
+                        <td>
+                            <div id="pfb_bg_preview_container" style="margin-bottom:10px;">
+                                <?php if (!empty($form->form_bg_image)): ?>
+                                    <img src="<?php echo esc_url($form->form_bg_image); ?>" id="pfb_bg_preview" style="max-width:200px; border:1px solid #ccc; padding:5px; border-radius:4px; display:block;">
+                                    <button type="button" class="button button-link-delete" id="pfb_remove_bg" style="color:red; text-decoration:none; padding:0; margin-top:5px;">Remove Image</button>
+                                <?php else: ?>
+                                    <img id="pfb_bg_preview" style="max-width:200px; border:1px solid #ccc; padding:5px; border-radius:4px; display:none;">
+                                <?php endif; ?>
+                            </div>
+
+                            <input type="text" name="form_bg_image" id="pfb_bg_url" value="<?php echo esc_attr($form->form_bg_image); ?>" class="regular-text">
+                            <button type="button" class="button pfb-media-upload">Upload Image</button>
+                        </td>
+                    </tr>
+                    <?php pfb_render_full_designer('view_', $form); ?>
+                </table>
+            <?php endif; ?>
+        </div>
+
+
+        <!-- <div id="pfb-view-tab" class="pfb-tab-content" style="display:none;">
             <table class="form-table">
                 <tr>
                     <th>Profile Background</th>
@@ -203,14 +242,26 @@ function pfb_render_full_designer($prefix, $form) {
                 </tr>
                 <?php pfb_render_full_designer('view_', $form); ?>
             </table>
-        </div>
+        </div> -->
 
         <div id="pfb-edit-tab" class="pfb-tab-content" style="display:none;">
-            <table class="form-table"><?php pfb_render_full_designer('edit_', $form); ?></table>
+            <?php if ( ! $is_license_active ) : ?>
+                <div class="notice notice-error">
+                    <p>🔒 Premium Feature — Activate license to access this tab.</p>
+                </div>
+            <?php else : ?>
+                <table class="form-table"><?php pfb_render_full_designer('edit_', $form); ?></table>
+            <?php endif; ?>
         </div>
 
         <div id="pfb-submit-tab" class="pfb-tab-content" style="display:none;">
-            <table class="form-table"><?php pfb_render_full_designer('submit_', $form); ?></table>
+            <?php if ( ! $is_license_active ) : ?>
+                <div class="notice notice-error">
+                    <p>🔒 Premium Feature — Activate license to access this tab.</p>
+                </div>
+            <?php else : ?>
+                <table class="form-table"><?php pfb_render_full_designer('submit_', $form); ?></table>
+            <?php endif; ?>
         </div>
 
         <?php submit_button('Save All Designer Settings'); ?>
@@ -223,6 +274,24 @@ function pfb_render_full_designer($prefix, $form) {
     .pfb-input-row label { width: 220px; display: inline-block; color: #555; }
     .pfb-input-row input[type="number"] { width: 70px; }
     .pfb-tab-content h3 { border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 10px; color: #2271b1; }
+    .pfb-pro-tab.pfb-tab-locked {
+        opacity: 0.45;
+        pointer-events: none;
+        position: relative;
+    }
+
+    .pfb-pro-tab.pfb-tab-locked::after {
+        content: 'PRO';
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        background: #d63638;
+        color: #fff;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 10px;
+    }
+
 </style>
 
 <script>
@@ -328,4 +397,20 @@ jQuery(document).ready(function($) {
         $(this).remove();
     });
 });
+
+
+// Lock PRO tabs if license inactive
+const licenseActive = <?php echo $is_license_active ? 'true' : 'false'; ?>;
+
+if (!licenseActive) {
+    document.querySelectorAll('.pfb-pro-tab').forEach(tab => {
+        tab.classList.add('pfb-tab-locked');
+
+        tab.addEventListener('click', function (e) {
+            e.preventDefault();
+            alert('🔒 This is a Premium feature. Please activate your license.');
+        });
+    });
+}
+
 </script>
