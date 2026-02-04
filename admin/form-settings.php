@@ -304,7 +304,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 1. Tab Switching & Persistence
     const urlParams = new URLSearchParams(window.location.search);
-    const activeTabId = urlParams.get('tab') || '#pfb-access-tab';
+    // const activeTabId = urlParams.get('tab') || '#pfb-access-tab';
+    let activeTabId = urlParams.get('tab') || '#pfb-access-tab';
+
+    const licenseActive = <?php echo $is_license_active ? 'true' : 'false'; ?>;
+
+    if (
+        !licenseActive &&
+        ['#pfb-view-tab', '#pfb-edit-tab', '#pfb-submit-tab'].includes(activeTabId)
+    ) {
+        activeTabId = '#pfb-access-tab';
+    }
+
 
     function activateTab(targetId) {
         tabs.forEach(t => t.classList.remove('nav-tab-active'));
@@ -321,12 +332,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     activateTab(activeTabId);
 
+    // 🔒 Lock PRO tabs if license inactive
+    if (!licenseActive) {
+        document.querySelectorAll('.pfb-pro-tab').forEach(tab => {
+            tab.classList.add('pfb-tab-locked');
+        });
+    }
+
+
     tabs.forEach(tab => {
         tab.addEventListener('click', function(e) {
             e.preventDefault();
+
+            if (!licenseActive && tab.classList.contains('pfb-pro-tab')) {
+                alert('🔒 This is a Premium feature. Please activate your license.');
+                return;
+            }
+
             activateTab(this.getAttribute('href'));
         });
     });
+
 
     // 2. Access Control Role Toggling (Old Logic)
     const toggleRoles = () => { if(roleRow) roleRow.style.display = (accessSelect.value === 'logged_in') ? 'table-row' : 'none'; };
@@ -396,21 +422,8 @@ jQuery(document).ready(function($) {
         // Remove the button itself from the DOM
         $(this).remove();
     });
+
 });
 
-
-// Lock PRO tabs if license inactive
-const licenseActive = <?php echo $is_license_active ? 'true' : 'false'; ?>;
-
-if (!licenseActive) {
-    document.querySelectorAll('.pfb-pro-tab').forEach(tab => {
-        tab.classList.add('pfb-tab-locked');
-
-        tab.addEventListener('click', function (e) {
-            e.preventDefault();
-            alert('🔒 This is a Premium feature. Please activate your license.');
-        });
-    });
-}
 
 </script>
