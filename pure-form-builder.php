@@ -28,6 +28,11 @@ require_once PFB_PATH . 'includes/admin-actions.php';
 require_once PFB_PATH . 'includes/helpers.php';
 require_once PFB_PATH . 'includes/submit-handler.php';
 
+// License Auth
+require_once PFB_PATH . 'admin/dashboard.php';
+require_once PFB_PATH . 'includes/class-licenseauth.php';
+
+
 add_action('wp_enqueue_scripts', function () {
     wp_enqueue_style(
         'pfb-frontend',
@@ -91,4 +96,29 @@ add_action('admin_enqueue_scripts', function($hook) {
 });
 // AJAX for instant image removal from frontend
 add_action('wp_ajax_pfb_remove_frontend_image', 'pfb_handle_frontend_image_removal');
+
+
+
+
+
+/* ===============================
+ * LICENSE HELPER
+ * =============================== */
+function la_is_license_active() {
+    return get_option('la_license_status') === 'active';
+}
+
+/* ===============================
+ * ADMIN NOTICE
+ * =============================== */
+add_action('admin_notices', function () {
+
+    if (isset($_GET['page']) && $_GET['page'] === 'pfb-license') return;
+    if (la_is_license_active()) return;
+
+    echo '<div class="notice notice-error"><p>
+    🔒 License inactive. <a href="' . admin_url('admin.php?page=pfb-license') . '">Activate now</a>
+    </p></div>';
+});
+
 

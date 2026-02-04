@@ -79,9 +79,17 @@ function pfb_register_admin_menu() {
         'pfb-form-settings',
         'pfb_render_form_settings'
     );
+    
+    // SUBMENU: License
+    add_submenu_page(
+        'pfb-forms',
+        'License',
+        'License',
+        'manage_options',
+        'pfb-license',
+        'la_licenseauth_dashboard'
+    );
 }
-
-/* CALLBACK FUNCTIONS */
 
 function pfb_forms_list() {
     include PFB_PATH . 'admin/forms-list.php';
@@ -115,3 +123,4 @@ function pfb_render_entry_edit_admin() {
     }
     require_once PFB_PATH . 'admin/entry-edit.php';
 }
+
