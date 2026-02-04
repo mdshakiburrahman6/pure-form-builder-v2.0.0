@@ -13,6 +13,9 @@ if (!current_user_can('manage_options')) {
     wp_die('You do not have permission to edit this entry.');
 }
 
+$pro_active = function_exists('la_is_license_active') && la_is_license_active();
+
+
 /* =========================
    GET ENTRY AND FORM DATA
 ========================= */
@@ -43,6 +46,15 @@ foreach ($meta_rows as $m) {
 
 <div class="wrap">
     <h1>Edit Entry</h1>
+    <?php if (!$pro_active): ?>
+        <div class="notice notice-warning">
+            <p>
+                🔒 <strong>Entry editing is a PRO feature.</strong><br>
+                You can view data, but editing is disabled.
+            </p>
+        </div>
+    <?php endif; ?>
+
 
     <p><strong>Entry ID:</strong> <?php echo esc_html($entry_id); ?> | <strong>User:</strong> <?php echo esc_html($entry->user_id ?: 'Guest'); ?> | <strong>Date:</strong> <?php echo esc_html($entry->created_at); ?></p>
 
@@ -89,7 +101,7 @@ foreach ($meta_rows as $m) {
                                     case 'email':
                                     case 'url':
                                     case 'tel': ?>
-                                        <input type="<?php echo esc_attr($field->type); ?>" name="fields[<?php echo esc_attr($field->name); ?>]" value="<?php echo esc_attr($value); ?>" class="regular-text">
+                                        <input type="<?php echo esc_attr($field->type); ?>" name="fields[<?php echo esc_attr($field->name); ?>]" value="<?php echo esc_attr($value); ?>" class="regular-text" <?php disabled(!$pro_active); ?>>
                                     <?php break; ?>
 
                                     <?php case 'textarea': ?>
@@ -109,7 +121,7 @@ foreach ($meta_rows as $m) {
                                     <?php case 'radio':
                                         $options = json_decode($field->options, true) ?: [];
                                         foreach ($options as $opt): ?>
-                                            <label><input type="radio" name="fields[<?php echo esc_attr($field->name); ?>]" value="<?php echo esc_attr($opt); ?>" <?php checked($value, $opt); ?>> <?php echo esc_html($opt); ?></label><br>
+                                            <label><input type="radio" name="fields[<?php echo esc_attr($field->name); ?>]" value="<?php echo esc_attr($opt);  ?>"  <?php checked($value, $opt); ?> <?php disabled(!$pro_active); ?>> <?php echo esc_html($opt); ?></label><br>
                                         <?php endforeach; break; ?>
 
                                     <?php case 'image': ?>
@@ -120,13 +132,13 @@ foreach ($meta_rows as $m) {
                                                     
                                                     <div class="pfb-remove-wrapper">
                                                         <label style="color: #d63638; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;">
-                                                            <input type="checkbox" name="delete_image[]" value="<?php echo esc_attr($field->name); ?>" style="margin:0;"> 
+                                                            <input type="checkbox" name="delete_image[]" value="<?php echo esc_attr($field->name); ?>" style="margin:0;" <?php disabled(!$pro_active); ?>> 
                                                             <span style="text-decoration: none;">Remove Image</span>
                                                         </label>
                                                     </div>
                                                 </div>
                                             <?php endif; ?>
-                                            <input type="file" name="<?php echo esc_attr($field->name); ?>" onchange="pfbLivePreview(this, 'single')">
+                                            <input type="file" name="<?php echo esc_attr($field->name); ?>" onchange="pfbLivePreview(this, 'single')" <?php disabled(!$pro_active); ?>>
                                             <div class="pfb-new-preview" style="margin-top:10px;"></div>
                                         </div>
                                     <?php break; ?>
@@ -145,19 +157,19 @@ foreach ($meta_rows as $m) {
                                                     
                                                     <div class="pfb-remove-wrapper">
                                                         <label style="color: #d63638; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;">
-                                                            <input type="checkbox" name="delete_image[]" value="<?php echo esc_attr($field->name); ?>" style="margin:0;"> 
+                                                            <input type="checkbox" name="delete_image[]" value="<?php echo esc_attr($field->name); ?>" style="margin:0;" <?php disabled(!$pro_active); ?>> 
                                                             <span style="text-decoration: none;">Remove Gallery</span>
                                                         </label>
                                                     </div>
                                                 </div>
                                             <?php endif; ?>
-                                            <input type="file" name="<?php echo esc_attr($field->name); ?>[]" multiple onchange="pfbLivePreview(this, 'gallery')">
+                                            <input type="file" name="<?php echo esc_attr($field->name); ?>[]" multiple onchange="pfbLivePreview(this, 'gallery')" <?php disabled(!$pro_active); ?>>
                                             <div class="pfb-new-preview" style="display:flex; gap:10px; margin-top:10px;"></div>
                                         </div>
                                     <?php break; ?>
 
                                     <?php default: ?>
-                                        <input type="text" name="fields[<?php echo esc_attr($field->name); ?>]" value="<?php echo esc_attr($value); ?>" class="regular-text">
+                                        <input type="text" name="fields[<?php echo esc_attr($field->name); ?>]" value="<?php echo esc_attr($value); ?>" class="regular-text" <?php disabled(!$pro_active); ?>>
                                 <?php endswitch; ?>
                             </td>
                         </tr>
@@ -170,7 +182,18 @@ foreach ($meta_rows as $m) {
             ?>
         </table>
 
-        <?php submit_button('Update Entry'); ?>
+        <?php if ($pro_active): ?>
+            <?php submit_button('Update Entry'); ?>
+        <?php else: ?>
+            <button type="button" class="button button-secondary" disabled>
+                🔒 Update Entry (PRO)
+            </button>
+
+            <p style="margin-top:10px;color:#d63638;">
+                This is a PRO feature. Activate license to edit entries.
+            </p>
+        <?php endif; ?>
+
 
     </form>
 
