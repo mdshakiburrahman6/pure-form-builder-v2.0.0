@@ -29,6 +29,12 @@ $all_fields = $wpdb->get_results($wpdb->prepare(
     "SELECT name, label, options FROM {$wpdb->prefix}pfb_fields WHERE form_id=%d AND is_fieldset = 0", 
     $form_id
 ));
+$all_fields = apply_filters(
+    'pfb_conditional_sources',
+    $all_fields,
+    $form_id
+);
+
 ?>
 <style>
     /* Toast Notification Style */

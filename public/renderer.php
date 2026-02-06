@@ -9,6 +9,7 @@ if (!defined('ABSPATH')) exit;
 
 global $wpdb;
 
+
 // 1. Form load logic
 $form = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pfb_forms WHERE id = %d", $id));
 if (!$form) { echo '<p>Invalid form.</p>'; return; }
@@ -128,6 +129,13 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
         foreach ($all_fields as $f) : 
             /* - Update the Fieldset Loop section */
 
+            $should_render = apply_filters(
+                'pfb_should_render_field',
+                true,
+                $f,
+                $id
+            );
+
             if ($f->is_fieldset) {
                 if ($opened_fieldset) echo '</fieldset>';
                 
@@ -150,7 +158,18 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
 
             // $has_error = isset($pfb_errors[$f->name]);
             $has_error = (isset($pfb_errors[$f->name]) && !empty($f->required));
-            $value = ($is_edit && isset($existing_meta[$f->name])) ? $existing_meta[$f->name] : '';
+            $raw_value = ($is_edit && isset($existing_meta[$f->name]))
+                ? $existing_meta[$f->name]
+                : '';
+
+            $value = apply_filters(
+                'pfb_resolve_field_value',
+                $raw_value,
+                $f->name,
+                $entry_id ?? 0,
+                get_current_user_id()
+            );
+
             ?>
             <div class="pfb-field <?php echo $has_error ? 'pfb-has-error' : ''; ?>" <?php if (!empty($f->rules)) echo 'data-rules="' . esc_attr($f->rules) . '"'; ?>>
                 <!-- <label><?php // echo esc_html($f->label); ?></label> -->
