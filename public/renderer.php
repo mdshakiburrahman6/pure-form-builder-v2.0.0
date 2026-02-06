@@ -155,7 +155,8 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
                     ? ' data-rules="' . esc_attr($f->rules) . '"'
                     : '';
 
-                echo '<fieldset class="pfb-section-wrapper"' . $section_rules . '>';
+                echo '<fieldset class="pfb-section-wrapper pfb-section"' . $section_rules . '>';
+
 
                 echo '<legend>' . esc_html($f->label) . '</legend>';
                 $opened_fieldset = true;
