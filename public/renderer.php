@@ -127,15 +127,19 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
         <?php 
         $opened_fieldset = false;
         foreach ($all_fields as $f) : 
-            /* - Update the Fieldset Loop section */
-
+           
             $should_render = apply_filters(
                 'pfb_should_render_field',
                 true,
                 $f,
                 $id
             );
+ 
+            if (!$should_render) {
+                continue;
+            }
 
+            /* - Update the Fieldset Loop section */
             if ($f->is_fieldset) {
                 if ($opened_fieldset) echo '</fieldset>';
                 
@@ -208,12 +212,18 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
                     case 'radio':
                         $options = json_decode($f->options, true) ?: [];
                         $is_required = !empty($f->required);
+                        $idx = 0;
+
                         foreach ($options as $opt) {
-                            // Wrapped in a styled label for better UI
                             echo '<label class="pfb-radio-label">';
-                            echo '<input type="radio" name="'.esc_attr($f->name).'" value="'.esc_attr($opt).'" '.checked($value === $opt, true, false).' '.($is_required && $index === 0 ? 'required' : '').' >';
+                            echo '<input type="radio"
+                                name="'.esc_attr($f->name).'"
+                                value="'.esc_attr($opt).'"
+                                '.checked($value === $opt, true, false).'
+                                '.($is_required && $idx === 0 ? 'required' : '').'>';
                             echo '<span>' . esc_html($opt) . '</span>';
                             echo '</label>';
+                            $idx++;
                         }
                         break;
 
