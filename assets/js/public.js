@@ -93,39 +93,117 @@ document.addEventListener('DOMContentLoaded', function () {
         return values;
     }
 
+    // function init(form) {
+
+    //     // const conditionalFields = form.querySelectorAll('.pfb-field[data-rules]');
+    //     const conditionalTargets = form.querySelectorAll('[data-rules]');
+    //     if (!conditionalFields.length) return;
+
+    //     function update() {
+    //         const values = getValues(form);
+
+    //         // conditionalFields.forEach(field => {
+    //         //     const rules = JSON.parse(field.dataset.rules);
+    //         //     const show = evaluateRules(rules, values);
+
+    //         //     field.style.display = show ? '' : 'none';
+
+    //         //     // required / disabled sync
+    //         //     field.querySelectorAll('input,select,textarea').forEach(el => {
+    //         //         if (!el.dataset.req) el.dataset.req = el.required ? '1' : '0';
+
+    //         //         if (show) {
+    //         //             el.disabled = false;
+    //         //             el.required = el.dataset.req === '1';
+    //         //         } else {
+    //         //             el.disabled = true;
+    //         //             el.required = false;
+    //         //         }
+    //         //     });
+    //         // });
+    //         conditionalTargets.forEach(el => {
+
+    //             // child field skip if parent section hidden
+    //             if (el.classList.contains('pfb-field')) {
+    //                 const section = el.closest('.pfb-section-wrapper');
+    //                 if (section && section.style.display === 'none') {
+    //                     return;
+    //                 }
+    //             }
+
+    //             const rules = JSON.parse(el.dataset.rules);
+    //             const show = evaluateRules(rules, values);
+
+    //             el.style.display = show ? '' : 'none';
+
+    //             // only FIELD needs required/disabled sync
+    //             if (el.classList.contains('pfb-field')) {
+    //                 el.querySelectorAll('input,select,textarea').forEach(input => {
+    //                     if (!input.dataset.req) {
+    //                         input.dataset.req = input.required ? '1' : '0';
+    //                     }
+
+    //                     if (show) {
+    //                         input.disabled = false;
+    //                         input.required = input.dataset.req === '1';
+    //                     } else {
+    //                         input.disabled = true;
+    //                         input.required = false;
+    //                     }
+    //                 });
+    //             }
+
+    //         });
+
+    //     }
+
+    //     update(); // THIS FIXES ADMIN EDIT ISSUE
+    //     form.addEventListener('change', update);
+    //     form.addEventListener('input', update);
+    // }
     function init(form) {
 
-        const conditionalFields = form.querySelectorAll('.pfb-field[data-rules]');
-        if (!conditionalFields.length) return;
+        const conditionalTargets = form.querySelectorAll('[data-rules]');
+        if (!conditionalTargets.length) return;
 
         function update() {
             const values = getValues(form);
 
-            conditionalFields.forEach(field => {
-                const rules = JSON.parse(field.dataset.rules);
+            conditionalTargets.forEach(el => {
+
+                if (el.classList.contains('pfb-field')) {
+                    const section = el.closest('.pfb-section-wrapper');
+                    if (section && section.style.display === 'none') return;
+                }
+
+                const rules = JSON.parse(el.dataset.rules);
                 const show = evaluateRules(rules, values);
 
-                field.style.display = show ? '' : 'none';
+                el.style.display = show ? '' : 'none';
 
-                // required / disabled sync
-                field.querySelectorAll('input,select,textarea').forEach(el => {
-                    if (!el.dataset.req) el.dataset.req = el.required ? '1' : '0';
+                if (el.classList.contains('pfb-field')) {
+                    el.querySelectorAll('input,select,textarea').forEach(input => {
+                        if (!input.dataset.req) {
+                            input.dataset.req = input.required ? '1' : '0';
+                        }
 
-                    if (show) {
-                        el.disabled = false;
-                        el.required = el.dataset.req === '1';
-                    } else {
-                        el.disabled = true;
-                        el.required = false;
-                    }
-                });
+                        if (show) {
+                            input.disabled = false;
+                            input.required = input.dataset.req === '1';
+                        } else {
+                            input.disabled = true;
+                            input.required = false;
+                        }
+                    });
+                }
             });
         }
 
-        update(); // 🔥 THIS FIXES ADMIN EDIT ISSUE
+        update();
         form.addEventListener('change', update);
         form.addEventListener('input', update);
     }
+
 
     document
         .querySelectorAll('.pfb-form, .pfb-admin-form')

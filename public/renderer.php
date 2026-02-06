@@ -150,7 +150,13 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
                 // In renderer.php (used for Submit/Edit), we keep the background empty.
                 $bg_style = ""; 
 
-                echo '<fieldset class="pfb-section-wrapper" style="' . $bg_style . '">';
+                // echo '<fieldset class="pfb-section-wrapper" style="' . $bg_style . '">';
+                $section_rules = !empty($f->rules)
+                    ? ' data-rules="' . esc_attr($f->rules) . '"'
+                    : '';
+
+                echo '<fieldset class="pfb-section-wrapper"' . $section_rules . '>';
+
                 echo '<legend>' . esc_html($f->label) . '</legend>';
                 $opened_fieldset = true;
                 continue;

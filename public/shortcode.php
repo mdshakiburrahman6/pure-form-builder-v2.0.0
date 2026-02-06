@@ -85,17 +85,14 @@ function pfb_render_my_entry($atts) {
         )
     );
 
-    // ৩. ডাটা না থাকলে সাবমিশন ফর্ম দেখাবে
     if (!$entry_id) {
         return do_shortcode('[pfb_form id="' . $form_id . '"]');
     }
 
-    // ৪. এডিট মোড হ্যান্ডেল করা
     if (isset($_GET['edit']) && intval($_GET['edit']) === 1) {
         return do_shortcode('[pfb_form id="' . $form_id . '" entry_id="' . $entry_id . '"]');
     }
 
-    // ৫. ভিউ মোড রেন্ডার করা
     return pfb_render_entry_view($entry_id, $form_id);
 }
 
@@ -266,9 +263,33 @@ if (!function_exists('pfb_render_entry_view')) {
                             $section_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pfb_fields WHERE fieldset_id = %d AND is_fieldset = 0 ORDER BY sort_order ASC", $section->id));
                             
                             // Check if current section has any non-empty meta data
+                            // $has_data = false;
+                            // foreach($section_fields as $check) { if(!empty($meta_map[$check->name])) { $has_data = true; break; } }
+                            // if(!$has_data) continue;
+                            // 1️Conditional Logic check (SECTION rules)
+                            $rules = !empty($section->rules)
+                                ? json_decode($section->rules, true)
+                                : [];
+
+                            $condition_pass = pfb_evaluate_rules_php($rules, $meta_map);
+
+                            if (!$condition_pass) {
+                                continue; // condition false → section hide
+                            }
+
+                            // Hide if empty logic (existing behavior)
                             $has_data = false;
-                            foreach($section_fields as $check) { if(!empty($meta_map[$check->name])) { $has_data = true; break; } }
-                            if(!$has_data) continue;
+                            foreach ($section_fields as $check) {
+                                if (!empty($meta_map[$check->name])) {
+                                    $has_data = true;
+                                    break;
+                                }
+                            }
+
+                            if (!$has_data) {
+                                continue;
+                            }
+
 
                             // Calculate background style and opacity for section headers
                             $sec_bg_style = "";
@@ -353,4 +374,35 @@ if (!function_exists('pfb_render_entry_view')) {
         </div>
         <?php return ob_get_clean();
     }
+}
+
+function pfb_evaluate_rules_php($rules, $values) {
+    if (empty($rules)) return true;
+
+    foreach ($rules as $group) {
+        $group_pass = true;
+
+        foreach ($group['rules'] as $rule) {
+            $field_val = $values[$rule['field']] ?? '';
+
+            if ($field_val === '') {
+                $group_pass = false;
+                break;
+            }
+
+            if ($rule['operator'] === 'is' && $field_val != $rule['value']) {
+                $group_pass = false;
+                break;
+            }
+
+            if ($rule['operator'] === 'is_not' && $field_val == $rule['value']) {
+                $group_pass = false;
+                break;
+            }
+        }
+
+        if ($group_pass) return true; // OR group passed
+    }
+
+    return false;
 }

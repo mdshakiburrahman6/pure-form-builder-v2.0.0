@@ -285,7 +285,7 @@ $all_fields = apply_filters(
                     <td><input type="number" step="0.1" name="max_size" value="<?php echo esc_attr($edit_field->max_size ?? 2); ?>" class="small-text"></td>
                 </tr>
 
-                <tr class="pfb-standard-field">
+                <tr class="pfb-standard-field pfb-logic-supported">
                     <th>Conditional Logic</th>
                     <td>
                         <label><input type="checkbox" id="enable_condition" <?php echo (!empty($edit_field->rules)) ? 'checked' : ''; ?>> Show only if...</label>
@@ -312,11 +312,17 @@ $all_fields = apply_filters(
         const typeSelect = $('#pfb-field-type');
         function toggleUI() {
             const val = typeSelect.val();
+
             $('.pfb-fieldset-only').toggle(val === 'fieldset');
+
+            // Standard fields hide only for fieldset EXCEPT conditional logic
             $('.pfb-standard-field').toggle(val !== 'fieldset');
-            $('.pfb-field-options-row').toggle(['select', 'radio'].includes(val));
-            $('.pfb-file-settings').toggle(['file', 'image', 'gallery'].includes(val));
+            $('.pfb-logic-supported').show();
+
+            $('.pfb-field-options-row').toggle(['select','radio'].includes(val));
+            $('.pfb-file-settings').toggle(['file','image','gallery'].includes(val));
         }
+
         typeSelect.on('change', toggleUI);
         toggleUI();
 

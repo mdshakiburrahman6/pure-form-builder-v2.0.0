@@ -25,6 +25,7 @@ $forms = $wpdb->get_results("SELECT * FROM $table ORDER BY id DESC");
                     <th>ID</th>
                     <th>Form Name</th>
                     <th>Shortcode</th>
+                    <th>Profile Shortcode</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -36,6 +37,16 @@ $forms = $wpdb->get_results("SELECT * FROM $table ORDER BY id DESC");
                         <td>
                             <code id="pfb-shortcode-<?php echo $form->id; ?>">[pfb_form id="<?php echo $form->id; ?>"]</code>
                             <button type="button" class="button button-small pfb-copy-btn" data-id="<?php echo $form->id; ?>">Copy</button>
+                        </td>
+                        <td>
+                            <code id="pfb-profile-shortcode-<?php echo $form->id; ?>">
+                                [pfb_my_entry form_id="<?php echo $form->id; ?>"]
+                            </code>
+                            <button type="button"
+                                    class="button button-small pfb-copy-btn-profile"
+                                    data-id="<?php echo $form->id; ?>">
+                                Copy
+                            </button>
                         </td>
                         <td>
                             <a href="<?php echo admin_url('admin.php?page=pfb-builder&form_id=' . $form->id); ?>">
@@ -67,14 +78,31 @@ $forms = $wpdb->get_results("SELECT * FROM $table ORDER BY id DESC");
 
 <script>
     jQuery(document).ready(function($) {
+
+        // Form shortcode copy
         $('.pfb-copy-btn').on('click', function() {
             const id = $(this).data('id');
-            const text = $('#pfb-shortcode-' + id).text();
+            const text = $('#pfb-shortcode-' + id).text().trim();
+
             navigator.clipboard.writeText(text);
-            
+
             const btn = $(this);
             btn.text('Copied!');
-            setTimeout(() => btn.text('Copy'), 2000);
+            setTimeout(() => btn.text('Copy'), 1500);
         });
+
+        // Profile shortcode copy
+        $('.pfb-copy-btn-profile').on('click', function() {
+            const id = $(this).data('id');
+            const text = $('#pfb-profile-shortcode-' + id).text().trim();
+
+            navigator.clipboard.writeText(text);
+
+            const btn = $(this);
+            btn.text('Copied!');
+            setTimeout(() => btn.text('Copy'), 1500);
+        });
+
     });
 </script>
+
