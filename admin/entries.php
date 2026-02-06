@@ -7,18 +7,37 @@ $form_id = isset($_GET['form_id']) ? intval($_GET['form_id']) : 0;
 $entries = [];
 
 if ($form_id) {
-    $entries = $wpdb->get_results($wpdb->prepare(
-        "SELECT * FROM {$wpdb->prefix}pfb_entries WHERE form_id = %d ORDER BY created_at DESC",
-        $form_id
-    ));
+
+    $where  = "WHERE e.form_id = %d";
+    $params = [$form_id];
+
+    // Search by user display name
+    if (!empty($_GET['s'])) {
+        $where .= " AND u.display_name LIKE %s";
+        $params[] = '%' . $wpdb->esc_like($_GET['s']) . '%';
+    }
+
+    $sql = $wpdb->prepare("
+        SELECT e.*
+        FROM {$wpdb->prefix}pfb_entries e
+        LEFT JOIN {$wpdb->users} u ON u.ID = e.user_id
+        $where
+        ORDER BY e.created_at DESC
+    ", $params);
+
+    $entries = $wpdb->get_results($sql);
 }
+
 ?>
 
 <div class="wrap">
     <h1>Form Entries</h1>
-    <div class="form-header" style="display: flex; justify-content:space-between">
-        <form method="get">
+    <div class="form-header" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+
+        <!-- LEFT: Form + Filter -->
+        <form method="get" style="display:flex; gap:8px; align-items:center;">
             <input type="hidden" name="page" value="pfb-entries">
+
             <select name="form_id">
                 <option value="">Select Form</option>
                 <?php foreach ($forms as $form): ?>
@@ -27,15 +46,36 @@ if ($form_id) {
                     </option>
                 <?php endforeach; ?>
             </select>
+
             <button class="button">Filter</button>
         </form>
 
-        <form method="get" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline-block;">
-            <input type="hidden" name="action" value="pfb_export_entries">
+        <!-- RIGHT: Search + Search Button + Export -->
+        <form method="get" style="display:flex; gap:8px; align-items:center;">
+            
+            <input type="hidden" name="page" value="pfb-entries">
             <input type="hidden" name="form_id" value="<?php echo esc_attr($form_id); ?>">
-            <button class="button button-primary">Export CSV</button>
+
+            <input type="text"
+                name="s"
+                placeholder="Search user..."
+                value="<?php echo esc_attr($_GET['s'] ?? ''); ?>">
+
+            <button class="button">Search</button>
+
+            <a href="<?php 
+                echo esc_url(
+                    admin_url('admin-post.php?action=pfb_export_entries&form_id=' . $form_id . '&s=' . urlencode($_GET['s'] ?? ''))
+                );
+            ?>" class="button button-primary">
+                Export CSV
+            </a>
+
         </form>
+
+
     </div>
+
 
     <?php if ($form_id && $entries): ?>
         <table class="widefat striped" style="margin-top:20px;">
