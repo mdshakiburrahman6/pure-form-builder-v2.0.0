@@ -82,7 +82,17 @@ function pfb_handle_add_field() {
     $field_name_raw = $_POST['field_name'] ?? '';
     if (!preg_match('/^[a-zA-Z][a-zA-Z0-9_]*$/', $field_name_raw)) wp_die('Invalid field name.');
     $field_name = strtolower($field_name_raw);
-    
+
+    // logic for includes/admin-actions.php
+    $existing_field = $wpdb->get_var($wpdb->prepare(
+        "SELECT id FROM {$wpdb->prefix}pfb_fields WHERE form_id = %d AND name = %s",
+        $form_id, $field_name
+    ));
+
+    if ($existing_field && !$field_id) { // Jodi id thake kintu eta naya field hoy
+        wp_die('Error: System Name (ID) must be unique for this form.');
+    }
+        
     $options = null;
     if (in_array($field_type, ['select','radio'])) {
         $options = !empty($_POST['field_options']) ? wp_json_encode(array_map('trim', explode(',', $_POST['field_options']))) : null;
@@ -207,13 +217,38 @@ function pfb_handle_update_entry() {
 /* =========================
    5. OTHER ACTIONS (Export, Settings, Field Sorting, etc.)
 ========================= */
+// function pfb_handle_delete_field() {
+//     if (!current_user_can('manage_options')) wp_die('Unauthorized');
+//     $field_id = intval($_GET['field_id']);
+//     $form_id  = intval($_GET['form_id']);
+//     check_admin_referer('pfb_delete_field_' . $field_id);
+//     global $wpdb;
+//     $wpdb->delete($wpdb->prefix . 'pfb_fields', ['id' => $field_id]);
+//     wp_redirect(admin_url('admin.php?page=pfb-builder&form_id=' . $form_id . '&field_deleted=1'));
+//     exit;
+// }
+
 function pfb_handle_delete_field() {
     if (!current_user_can('manage_options')) wp_die('Unauthorized');
+    
     $field_id = intval($_GET['field_id']);
     $form_id  = intval($_GET['form_id']);
+    
     check_admin_referer('pfb_delete_field_' . $field_id);
     global $wpdb;
+
+    $field_name = $wpdb->get_var($wpdb->prepare(
+        "SELECT name FROM {$wpdb->prefix}pfb_fields WHERE id = %d", 
+        $field_id
+    ));
+
+    if ($field_name) {
+
+    $wpdb->delete("{$wpdb->prefix}pfb_entry_meta", ['field_name' => $field_name]);
+    }
+
     $wpdb->delete($wpdb->prefix . 'pfb_fields', ['id' => $field_id]);
+
     wp_redirect(admin_url('admin.php?page=pfb-builder&form_id=' . $form_id . '&field_deleted=1'));
     exit;
 }

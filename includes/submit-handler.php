@@ -124,19 +124,22 @@ function pfb_handle_form_submit() {
         exit;
     }
 
-    // 4. SAVE (UPDATE OR INSERT)
+   // 4. SAVE (UPDATE OR INSERT)
     if ($entry_id) {
-        // Mode Update: Prothome ager shob meta delete kore nite hobe jate clean update hoy
-        // Athoba shudhu shei field gulo update korte hobe jeta submit hoyeche
         foreach ($data as $field => $val) {
-            $wpdb->update(
-                "{$wpdb->prefix}pfb_entry_meta",
-                ['field_value' => $val],
-                ['entry_id' => $entry_id, 'field_name' => $field]
-            );
-            
-            // Jodi update na hoy (orthat age row chhilo na), tobe insert korbe
-            if (!$wpdb->rows_affected) {
+            // Check if row already exists
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$wpdb->prefix}pfb_entry_meta WHERE entry_id = %d AND field_name = %s",
+                $entry_id, $field
+            ));
+
+            if ($exists) {
+                $wpdb->update(
+                    "{$wpdb->prefix}pfb_entry_meta",
+                    ['field_value' => $val],
+                    ['entry_id' => $entry_id, 'field_name' => $field]
+                );
+            } else {
                 $wpdb->insert("{$wpdb->prefix}pfb_entry_meta", [
                     'entry_id'    => $entry_id,
                     'field_name'  => $field,
