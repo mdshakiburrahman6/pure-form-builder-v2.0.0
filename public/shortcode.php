@@ -45,36 +45,25 @@ function pfb_render_my_entry($atts) {
 
     global $wpdb;
 
-    /**
-     * ১. ফর্ম আইডি ডিটেকশন (সবচেয়ে নির্ভরযোগ্য পদ্ধতি)
-     * নতুন পেজে get_the_ID() অনেক সময় কনফ্লিক্ট করে, তাই আমরা সরাসরি 
-     * শর্টকোড অ্যাট্রিবিউটকে প্রধান গুরুত্ব দিচ্ছি।
-     */
     $atts = shortcode_atts(['form_id' => 0], $atts);
     $form_id = intval($atts['form_id']);
 
-    // যদি শর্টকোডে আইডি না থাকে, তবে ইউআরএল থেকে খোঁজার চেষ্টা করবে
     if (!$form_id && isset($_GET['pfb_form_id'])) {
         $form_id = intval($_GET['pfb_form_id']);
     }
 
-    // ব্যাকআপ হিসেবে পেজ মেটা চেক করা
     if (!$form_id) {
         $page_id = get_queried_object_id();
         $form_id = intval(get_post_meta($page_id, 'pfb_form_id', true));
     }
 
-    // যদি কোনোভাবেই আইডি না পাওয়া যায়
     if (!$form_id) {
         return '<p style="color:red;">Error: form_id missing. Use [pfb_my_entry form_id="5"]</p>';
     }
 
     $user_id = get_current_user_id();
 
-    /**
-     * ২. এন্ট্রি ডিটেকশন লজিক
-     * নতুন পেজ বা স্লাগ যাই হোক, ইউজার আইডি এবং ফর্ম আইডি মিললে ডাটা দেখাবে।
-     */
+
     $entry_id = $wpdb->get_var(
         $wpdb->prepare(
             "SELECT id FROM {$wpdb->prefix}pfb_entries 
@@ -311,7 +300,7 @@ if (!function_exists('pfb_render_entry_view')) {
                                         if (empty($val)) continue; ?>
                                         
                                         <div class="pfb-info-item">
-                                            <span class="pfb-label"><?php echo esc_html($f->label); ?>:</span>
+                                            <span class="pfb-label"><?php echo esc_html($f->label); ?></span>
                                             <div class="pfb-view-value">
                                                 <?php 
                                                 $decoded_val = json_decode($val, true);
