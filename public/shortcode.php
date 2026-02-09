@@ -376,32 +376,104 @@ if (!function_exists('pfb_render_entry_view')) {
     }
 }
 
+// function pfb_evaluate_rules_php($rules, $values) {
+//     if (empty($rules)) return true;
+
+//     foreach ($rules as $group) {
+//         $group_pass = true;
+
+//         foreach ($group['rules'] as $rule) {
+//             $field_val = $values[$rule['field']] ?? '';
+
+//             if ($field_val === '') {
+//                 $group_pass = false;
+//                 break;
+//             }
+
+//             if ($rule['operator'] === 'is' && $field_val != $rule['value']) {
+//                 $group_pass = false;
+//                 break;
+//             }
+
+//             if ($rule['operator'] === 'is_not' && $field_val == $rule['value']) {
+//                 $group_pass = false;
+//                 break;
+//             }
+//         }
+
+//         if ($group_pass) return true; // OR group passed
+//     }
+
+//     return false;
+// }
+
 function pfb_evaluate_rules_php($rules, $values) {
+
     if (empty($rules)) return true;
 
     foreach ($rules as $group) {
+
         $group_pass = true;
 
         foreach ($group['rules'] as $rule) {
-            $field_val = $values[$rule['field']] ?? '';
 
-            if ($field_val === '') {
+            $field      = $rule['field'] ?? '';
+            $operator   = $rule['operator'] ?? '';
+            $rule_value = $rule['value'] ?? '';
+
+            if (!$field) {
                 $group_pass = false;
                 break;
             }
 
-            if ($rule['operator'] === 'is' && $field_val != $rule['value']) {
+            $current_val = $values[$field] ?? '';
+
+            // Empty value fails condition
+            if ($current_val === '') {
                 $group_pass = false;
                 break;
             }
 
-            if ($rule['operator'] === 'is_not' && $field_val == $rule['value']) {
+            // Numeric normalization for gt / lt
+            if (in_array($operator, ['gt','lt'], true)) {
+                $current_val = floatval($current_val);
+                $rule_value  = floatval($rule_value);
+            }
+
+            $pass = false;
+
+            switch ($operator) {
+
+                case 'is':
+                    $pass = ($current_val == $rule_value);
+                    break;
+
+                case 'is_not':
+                    $pass = ($current_val != $rule_value);
+                    break;
+
+                case 'gt':
+                    $pass = ($current_val > $rule_value);
+                    break;
+
+                case 'lt':
+                    $pass = ($current_val < $rule_value);
+                    break;
+
+                default:
+                    $pass = false;
+            }
+
+            if (!$pass) {
                 $group_pass = false;
                 break;
             }
         }
 
-        if ($group_pass) return true; // OR group passed
+        // OR logic
+        if ($group_pass) {
+            return true;
+        }
     }
 
     return false;

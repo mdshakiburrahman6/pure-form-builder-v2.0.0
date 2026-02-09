@@ -76,6 +76,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (v === '') return false;
                 if (rule.operator === 'is') return v === rule.value;
                 if (rule.operator === 'is_not') return v !== rule.value;
+                if (rule.operator === 'gt') return parseFloat(v) > parseFloat(rule.value);
+                if (rule.operator === 'lt') return parseFloat(v) < parseFloat(rule.value);
                 return false;
             })
         );

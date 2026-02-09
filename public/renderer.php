@@ -128,12 +128,18 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
         $opened_fieldset = false;
         foreach ($all_fields as $f) : 
            
-            $should_render = apply_filters(
-                'pfb_should_render_field',
-                true,
-                $f,
-                $id
-            );
+            $should_render = true;
+
+            // ONLY evaluate rules after submit
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $should_render = apply_filters(
+                    'pfb_should_render_field',
+                    true,
+                    $f,
+                    $id
+                );
+            }
+
  
             if (!$should_render) {
                 continue;
@@ -309,6 +315,81 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
     </form>
 </div>
 
+
+<?php 
+    add_filter('pfb_should_render_field', function ($render, $field, $form_id) {
+
+        if (empty($field->rules)) {
+            return $render;
+        }
+
+        $rules = json_decode($field->rules, true);
+        if (!is_array($rules)) {
+            return $render;
+        }
+
+        foreach ($rules as $group) {
+
+            $group_pass = true;
+
+            foreach ($group['rules'] as $rule) {
+
+                $source_field = $rule['field'] ?? '';
+                $operator     = $rule['operator'] ?? '';
+                $compare_val  = $rule['value'] ?? '';
+
+                if (!$source_field) {
+                    $group_pass = false;
+                    break;
+                }
+
+                $current_val = $_POST[$source_field] ?? '';
+
+                // Normalize numbers
+                if (in_array($operator, ['gt', 'lt'], true)) {
+                    $current_val = floatval($current_val);
+                    $compare_val = floatval($compare_val);
+                }
+
+                switch ($operator) {
+                    case 'is':
+                        $pass = ($current_val == $compare_val);
+                        break;
+
+                    case 'is_not':
+                        $pass = ($current_val != $compare_val);
+                        break;
+
+                    case 'gt':
+                        $pass = ($current_val > $compare_val);
+                        break;
+
+                    case 'lt':
+                        $pass = ($current_val < $compare_val);
+                        break;
+
+                    default:
+                        $pass = false;
+                }
+
+                if (!$pass) {
+                    $group_pass = false;
+                    break;
+                }
+            }
+
+            // OR logic: one group true is enough
+            if ($group_pass) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }, 10, 3);
+
+?>
+
 <script>
     function pfb_preview_gallery(input) {
         const container = input.closest('.pfb-gallery-wrap').querySelector('.pfb-gallery-preview-container');
@@ -466,7 +547,7 @@ jQuery(document).ready(function($) {
 //         window.history.replaceState({path: newURL}, '', newURL);
 //     }
 // });
-
 </script>
+
 
 

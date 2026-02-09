@@ -416,6 +416,8 @@ $all_fields = apply_filters(
                     <select name="rules[${groupIndex}][rules][${ruleIndex}][operator]">
                         <option value="is" ${ruleData?.operator === 'is' ? 'selected' : ''}>is</option>
                         <option value="is_not" ${ruleData?.operator === 'is_not' ? 'selected' : ''}>is not</option>
+                        <option value="gt" ${ruleData?.operator === 'gt' ? 'selected' : ''}>is greater than</option>
+                        <option value="lt" ${ruleData?.operator === 'lt' ? 'selected' : ''}>is less than</option>
                     </select>
                     <span class="pfb-rule-value-container">
                         <input type="text" name="rules[${groupIndex}][rules][${ruleIndex}][value]" value="${ruleData?.value || ''}" placeholder="value">
