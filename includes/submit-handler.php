@@ -165,6 +165,8 @@ function pfb_handle_form_submit() {
         }
     }
 
+    do_action('pfb_after_entry_save', $form_id, $entry_id, $user_id, $data);
+
     // 5. SUCCESS REDIRECT & CLEANUP
     $current_url = wp_get_referer();
     $view_profile_url = remove_query_arg(['edit', 'entry_id', 'pfb_errors'], $current_url);
