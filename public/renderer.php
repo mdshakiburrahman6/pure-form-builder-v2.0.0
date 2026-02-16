@@ -175,9 +175,15 @@ $all_fields = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}pf
 
             // $has_error = isset($pfb_errors[$f->name]);
             $has_error = (isset($pfb_errors[$f->name]) && !empty($f->required));
-            $raw_value = ($is_edit && isset($existing_meta[$f->name]))
-                ? $existing_meta[$f->name]
-                : '';
+            // $raw_value = ($is_edit && isset($existing_meta[$f->name]))
+            //     ? $existing_meta[$f->name]
+            //     : '';
+
+            if (isset($existing_meta[$f->name])) {
+                $raw_value = $existing_meta[$f->name];
+            } else {
+                $raw_value = '';
+            }
 
             $value = apply_filters(
                 'pfb_resolve_field_value',
